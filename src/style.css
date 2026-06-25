@@ -36,7 +36,7 @@
   }
 
   #settings-toggle {
-    @apply absolute right-3 top-3 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-xl text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
+    @apply absolute bottom-3 right-3 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-xl text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
   }
 
   #settings-panel {

@@ -2,7 +2,7 @@
 
 ## Goal
 
-Move level balance out of code and into JSON data, so each level can change duration, player tuning, shooters, bullets, and limits without editing TypeScript.
+Move level balance out of code and into JSON data, so each level can change player tuning, shooters, bullets, and limits without editing TypeScript.
 
 This spec defines the data shape only. Loading and applying the JSON is a later implementation step.
 
@@ -23,7 +23,6 @@ Shape:
     {
       "id": 1,
       "name": "First Contact",
-      "duration": 30,
       "arena": {
         "width": 460,
         "height": 560
@@ -57,7 +56,6 @@ Shape:
 | `levels` | array | Ordered list of playable levels. |
 | `id` | number | Stable level number. |
 | `name` | string | Human-readable level name. |
-| `duration` | number | Seconds required to win. |
 | `arena.width` | number | Logical canvas width in pixels. |
 | `arena.height` | number | Logical canvas height in pixels. |
 | `player.radius` | number | Player collision/render radius in pixels. |
@@ -68,20 +66,6 @@ Shape:
 | `shooters[].x` | number | Shooter X position in arena pixels. |
 | `shooters[].y` | number | Shooter Y position in arena pixels. |
 | `shooters[].cooldown` | number | Seconds between shots for that shooter. |
-
-## MVP Defaults
-
-The current game should be representable as level `1`:
-
-- `duration`: `30`
-- `arena`: `460x560`
-- `player.radius`: `10`
-- `player.speed`: `220`
-- `bullets.radius`: `5`
-- `bullets.speed`: `180`
-- `bullets.max`: `80`
-- one shooter at `{ "x": 230, "y": 28 }`
-- shooter cooldown: `0.9`
 
 ## Validation Rules
 
@@ -94,6 +78,7 @@ The current game should be representable as level `1`:
 
 ## Intentional Limits
 
+- No finite level duration in survival mode.
 - No per-shooter bullet speed yet.
 - No bullet lifetime yet.
 - No shooter movement yet.

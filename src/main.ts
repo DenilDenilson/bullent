@@ -38,7 +38,6 @@ const settingsError = requireValue(document.querySelector<HTMLElement>("#setting
 
 const inputs = {
   name: requireValue(document.querySelector<HTMLInputElement>("#level-name"), "Missing #level-name"),
-  duration: requireValue(document.querySelector<HTMLInputElement>("#level-duration"), "Missing #level-duration"),
   arenaWidth: requireValue(document.querySelector<HTMLInputElement>("#arena-width"), "Missing #arena-width"),
   arenaHeight: requireValue(document.querySelector<HTMLInputElement>("#arena-height"), "Missing #arena-height"),
   playerRadius: requireValue(document.querySelector<HTMLInputElement>("#player-radius"), "Missing #player-radius"),
@@ -49,6 +48,7 @@ const inputs = {
 };
 
 const keys = new Set<string>();
+const bestTimeKey = "bullent.bestTime";
 
 let baseLevel: LevelConfig = DEFAULT_LEVEL;
 let level: LevelConfig = DEFAULT_LEVEL;
@@ -56,7 +56,8 @@ let state: GameState = "ready";
 let player: Player = createPlayer(level);
 let shooters: Shooter[] = createShooters(level);
 let bullets: Bullet[] = [];
-let remaining = level.duration;
+let elapsed = 0;
+let bestTime = loadBestTime();
 let lastTime = performance.now();
 let loadError = "";
 let settingsOpen = false;
@@ -67,6 +68,28 @@ function cloneLevel(source: LevelConfig): LevelConfig {
 
 function numberValue(input: HTMLInputElement): number {
   return Number(input.value);
+}
+
+function formatTime(seconds: number): string {
+  return `${seconds.toFixed(1)}s`;
+}
+
+function loadBestTime(): number {
+  try {
+    const value = Number(localStorage.getItem(bestTimeKey) ?? 0);
+    return Number.isFinite(value) && value > 0 ? value : 0;
+  } catch {
+    return 0;
+  }
+}
+
+function saveBestTime(value: number): void {
+  bestTime = Math.max(bestTime, value);
+  try {
+    localStorage.setItem(bestTimeKey, String(bestTime));
+  } catch {
+    // Local storage is optional; the in-memory record still works for this session.
+  }
 }
 
 function validatedLevelFromForm(): LevelConfig {
@@ -82,7 +105,6 @@ function validatedLevelFromForm(): LevelConfig {
       {
         id: level.id,
         name: inputs.name.value,
-        duration: numberValue(inputs.duration),
         arena: {
           width: numberValue(inputs.arenaWidth),
           height: numberValue(inputs.arenaHeight),
@@ -126,7 +148,6 @@ function shooterRowHtml(shooter: LevelConfig["shooters"][number]): string {
 
 function renderSettingsForm(source: LevelConfig): void {
   inputs.name.value = source.name;
-  inputs.duration.value = String(source.duration);
   inputs.arenaWidth.value = String(source.arena.width);
   inputs.arenaHeight.value = String(source.arena.height);
   inputs.playerRadius.value = String(source.player.radius);
@@ -138,7 +159,7 @@ function renderSettingsForm(source: LevelConfig): void {
 }
 
 function openSettings(): void {
-  if (loadError || state === "running" || state === "won") {
+  if (loadError || state === "running") {
     return;
   }
 
@@ -174,7 +195,7 @@ function reset(nextState: GameState = "running"): void {
   player = createPlayer(level);
   shooters = createShooters(level);
   bullets = [];
-  remaining = level.duration;
+  elapsed = 0;
 }
 
 function startOrRestart(): void {
@@ -195,11 +216,7 @@ function update(dt: number): void {
     return;
   }
 
-  remaining = Math.max(0, remaining - dt);
-  if (remaining <= 0) {
-    state = "won";
-    return;
-  }
+  elapsed += dt;
 
   player = movePlayer(player, inputDirection(), dt, level);
 
@@ -216,6 +233,7 @@ function update(dt: number): void {
   bullets = bullets.map((bullet) => moveBullet(bullet, dt, level));
 
   if (bullets.some((bullet) => circlesTouch(player, bullet))) {
+    saveBestTime(elapsed);
     state = "dead";
   }
 }
@@ -255,9 +273,9 @@ function drawText(): void {
   } else if (state === "ready") {
     ctx.fillText("Click / Enter to start", level.arena.width / 2, level.arena.height / 2 + 58);
   } else if (state === "dead") {
-    ctx.fillText("Hit. Restart?", level.arena.width / 2, level.arena.height / 2 + 58);
-  } else if (state === "won") {
-    ctx.fillText("Survived. Again?", level.arena.width / 2, level.arena.height / 2 + 58);
+    ctx.fillText(`Survived ${formatTime(elapsed)}`, level.arena.width / 2, level.arena.height / 2 + 42);
+    ctx.font = "600 16px Inter, ui-sans-serif, system-ui, sans-serif";
+    ctx.fillText(`Best ${formatTime(bestTime)} · Restart?`, level.arena.width / 2, level.arena.height / 2 + 72);
   }
 }
 
@@ -279,11 +297,12 @@ function render(): void {
   ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
   ctx.textAlign = "left";
   ctx.textBaseline = "top";
-  ctx.fillText(`Time ${Math.ceil(remaining).toString().padStart(2, "0")}`, 18, 16);
+  ctx.fillText(`Time ${formatTime(elapsed)}`, 18, 16);
   ctx.fillText(level.name, 18, 36);
 
   ctx.textAlign = "right";
-  ctx.fillText(`Bullets ${bullets.length}`, level.arena.width - 18, 16);
+  ctx.fillText(`Best ${formatTime(bestTime)}`, level.arena.width - 18, 16);
+  ctx.fillText(`Bullets ${bullets.length}`, level.arena.width - 18, 36);
 
   for (const shooter of shooters) {
     drawCircle(shooter.pos, 12, "#f97316", "#fb923c");
@@ -312,11 +331,17 @@ function frame(now: number): void {
 
 window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
+
   if (settingsOpen) {
     if (key === "escape") {
       event.preventDefault();
       closeSettings();
     }
+    return;
+  }
+
+  const target = event.target instanceof HTMLElement ? event.target : null;
+  if (target?.closest("button, input, form")) {
     return;
   }
 

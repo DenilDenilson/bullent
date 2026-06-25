@@ -2,7 +2,7 @@
 
 ## Goal
 
-Add a settings gear to the `ready` and `dead` screens so the player can tune the current level from the game UI, using the same parameters that exist in `public/levels.json`.
+Add a settings gear to the `ready` and survived summary screens so the player can tune the current level from the game UI, using the same active parameters that exist in `public/levels.json`.
 
 The UI must feel like part of Bullent: compact, dark, neon-accented, keyboard-friendly, and not like a separate admin panel.
 
@@ -10,9 +10,8 @@ The UI must feel like part of Bullent: compact, dark, neon-accented, keyboard-fr
 
 - Show a gear button on screen only when the game state is:
   - `ready`
-  - `dead`
+  - `dead`, shown to the player as survived summary.
 - Do not show the gear while `running`.
-- On `won`, keep the screen simple: restart only, no config in this version.
 - The gear opens a modal/panel over the canvas.
 - Closing the panel returns to the previous state without starting the game.
 
@@ -22,7 +21,7 @@ The panel edits a draft copy of the active level:
 
 | UI Label | JSON Field | Control |
 | --- | --- | --- |
-| Duration | `duration` | number input |
+| Name | `name` | text input |
 | Arena width | `arena.width` | number input |
 | Arena height | `arena.height` | number input |
 | Player radius | `player.radius` | number input |
@@ -53,7 +52,7 @@ No persistence in v1:
 
 - Changes live only in memory.
 - Refreshing the page reloads `public/levels.json`.
-- No localStorage yet.
+- No localStorage for level settings yet.
 - No writing back to JSON from the browser.
 
 ## Validation
@@ -75,8 +74,8 @@ When validation fails:
 
 - Gear button:
   - icon-only button.
-  - top-right inside the canvas overlay.
-  - visible on `ready` and `dead`.
+  - bottom-right inside the canvas overlay.
+  - visible on `ready` and survived summary.
   - hover/focus state uses cyan or violet accent.
 - Panel:
   - dark translucent surface.
@@ -110,7 +109,7 @@ When validation fails:
 ## Intentional Limits
 
 - No save-to-file.
-- No localStorage.
+- No localStorage for level settings.
 - No level selector.
 - No import/export JSON.
 - No mobile-specific editor layout beyond responsive fitting.

@@ -11,7 +11,7 @@
 ![Deploy](https://img.shields.io/badge/deploy-Cloudflare%20Pages-0EA5E9)
 ![Embed](https://img.shields.io/badge/embed-iframe-EC4899)
 
-**Sobrevive 60 segundos. Esquiva el caos.**
+**Aguanta más tiempo. Esquiva el caos.**
 Un minijuego 2D embebible, diseñado para vivir dentro de un portfolio sin depender de frameworks pesados.
 
 </div>
@@ -49,7 +49,7 @@ Nivel 8  → 8 disparadores
 La meta es simple:
 
 > [!TIP]
-> Sobrevivir **60 segundos por nivel** sin tocar ninguna bala.
+> Sobrevivir el mayor tiempo posible sin tocar ninguna bala.
 
 ---
 
@@ -61,9 +61,9 @@ La meta es simple:
 | 🎯 Disparadores | Apuntan hacia la posición actual del jugador  |
 | 💥 Balas        | Rebotan contra las paredes                    |
 | ☠️ Daño         | Una bala toca al jugador y termina la partida |
-| ⏱️ Objetivo     | Sobrevivir 60 segundos por nivel              |
-| 🧩 Niveles      | 8 niveles en total                            |
-| 🔺 Progresión   | Cada nivel añade un disparador                |
+| ⏱️ Objetivo     | Aguantar el mayor tiempo posible              |
+| 🧩 Nivel        | Configurable mediante JSON o panel in-game    |
+| 🏆 Récord       | Mejor tiempo guardado localmente              |
 
 ---
 
@@ -82,26 +82,22 @@ En futuras versiones podrían añadirse habilidades como cámara lenta, escudo, 
 
 ---
 
-## 📈 Progresión de dificultad
+## 📈 Dificultad
 
 La dificultad principal nace de tres ideas:
 
-* cada nivel agrega un nuevo disparador;
+* el nivel puede configurarse con uno o más disparadores;
 * las balas rebotan contra las paredes;
-* las balas se acumulan durante el nivel.
+* las balas se acumulan durante la partida.
 
 Esto genera un sistema simple, pero con comportamiento emergente.
 
-| Nivel | Disparadores | Objetivo       |
-| ----- | -----------: | -------------- |
-| 1     |            1 | Sobrevivir 60s |
-| 2     |            2 | Sobrevivir 60s |
-| 3     |            3 | Sobrevivir 60s |
-| 4     |            4 | Sobrevivir 60s |
-| 5     |            5 | Sobrevivir 60s |
-| 6     |            6 | Sobrevivir 60s |
-| 7     |            7 | Sobrevivir 60s |
-| 8     |            8 | Sobrevivir 60s |
+| Parámetro | Controla |
+| --------- | -------- |
+| Disparadores | Cantidad, posición y cadencia |
+| Balas | Tamaño, velocidad y máximo acumulado |
+| Jugador | Tamaño y velocidad |
+| Arena | Tamaño del espacio jugable |
 
 > [!WARNING]
 > En la primera versión, la dificultad puede escalar muy rápido.
@@ -140,7 +136,7 @@ La idea es usar clases para entidades que tienen estado y comportamiento:
 
 | Clase / módulo | Responsabilidad                                                     |
 | -------------- | ------------------------------------------------------------------- |
-| `Game`         | Coordinar estado, loop, niveles y condiciones de victoria o derrota |
+| `Game`         | Coordinar estado, loop, récord y condiciones de partida |
 | `Player`       | Representar al jugador y su movimiento                              |
 | `Bullet`       | Representar balas, velocidad, rebotes y posición                    |
 | `Shooter`      | Representar disparadores y lógica de disparo                        |

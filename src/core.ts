@@ -3,7 +3,7 @@ export type Vec2 = {
   y: number;
 };
 
-export type GameState = "ready" | "running" | "dead" | "won";
+export type GameState = "ready" | "running" | "dead";
 
 export type Player = {
   pos: Vec2;
@@ -32,7 +32,6 @@ export type ShooterConfig = {
 export type LevelConfig = {
   id: number;
   name: string;
-  duration: number;
   arena: {
     width: number;
     height: number;
@@ -57,7 +56,6 @@ export type LevelFile = {
 export const DEFAULT_LEVEL: LevelConfig = {
   id: 1,
   name: "First Contact",
-  duration: 30,
   arena: {
     width: 460,
     height: 560,
@@ -211,7 +209,6 @@ function parseLevel(input: unknown, index: number): LevelConfig {
   const level: LevelConfig = {
     id: requireNumber(input.id, `${path}.id`),
     name: requireString(input.name, `${path}.name`),
-    duration: requireNumber(input.duration, `${path}.duration`),
     arena: {
       width: requireNumber(arena.width, `${path}.arena.width`),
       height: requireNumber(arena.height, `${path}.arena.height`),
