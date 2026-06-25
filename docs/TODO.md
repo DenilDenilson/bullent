@@ -11,26 +11,31 @@
 
 Recommended order:
 
-1. Dash corto
-   - first active power to implement;
-   - gives skill expression and escape options;
-   - needs cooldown and clear visual trail.
-2. Escudo de impacto
+1. Presagio
+   - next planned player power;
+   - shows bullet trajectories before the next bounce;
+   - fixed 2s cooldown.
+2. Egida
    - blocks one hit;
    - good beginner forgiveness;
    - should not remove all danger.
-3. Camara lenta
-   - slows bullets temporarily;
-   - useful for chaotic moments;
-   - likely needs careful balance.
+3. Pulso
+   - pushes nearby bullets outward;
+   - useful when the player is surrounded.
 
 Hold for later:
 
-- Pulso repelente.
-- Fase.
-- Gravedad inversa.
-- Limpieza parcial.
-- Nucleo estable.
+- Desfase.
+- Rechazo.
+- Purga.
+- Foco.
+
+## Design / Theming
+
+- Explore injectable visual styles/theme packs later:
+  - keep gameplay logic independent from presentation;
+  - allow different Bullent skins without changing core rules;
+  - start with CSS variables before adding a larger theming system.
 
 ## Enemy Powers
 
