@@ -33,6 +33,10 @@ function requireValue<T>(value: T | null, message: string): T {
 const gameCanvas = requireValue(canvas, "Missing #game canvas");
 const ctx = requireValue(gameCanvas.getContext("2d"), "Canvas 2D is not supported");
 const gameShell = requireValue(document.querySelector<HTMLElement>("#game-shell"), "Missing #game-shell");
+const mobileHud = requireValue(document.querySelector<HTMLElement>("#mobile-hud"), "Missing #mobile-hud");
+const mobileTime = requireValue(document.querySelector<HTMLElement>("#mobile-time"), "Missing #mobile-time");
+const mobileBest = requireValue(document.querySelector<HTMLElement>("#mobile-best"), "Missing #mobile-best");
+const mobileBullets = requireValue(document.querySelector<HTMLElement>("#mobile-bullets"), "Missing #mobile-bullets");
 const powersBar = requireValue(document.querySelector<HTMLElement>("#powers-bar"), "Missing #powers-bar");
 const slowPower = requireValue(document.querySelector<HTMLElement>("#power-slow"), "Missing #power-slow");
 const startScreen = requireValue(document.querySelector<HTMLElement>("#start-screen"), "Missing #start-screen");
@@ -50,7 +54,10 @@ const resetSettingsButton = requireValue(document.querySelector<HTMLButtonElemen
 const cancelSettingsButton = requireValue(document.querySelector<HTMLButtonElement>("#cancel-settings"), "Missing #cancel-settings");
 const shootersList = requireValue(document.querySelector<HTMLElement>("#shooters-list"), "Missing #shooters-list");
 const settingsError = requireValue(document.querySelector<HTMLElement>("#settings-error"), "Missing #settings-error");
-const mode = new URLSearchParams(window.location.search).get("embed") === "1" ? "embed" : "standalone";
+
+type PageMode = "standalone" | "embed" | "mobile";
+const params = new URLSearchParams(window.location.search);
+const mode: PageMode = params.get("embed") === "1" ? "embed" : params.get("mobile") === "1" ? "mobile" : "standalone";
 document.body.classList.add(`mode-${mode}`);
 
 const inputs = {
@@ -125,10 +132,26 @@ function supportsTouchFirstControls(): boolean {
   );
 }
 
+function shouldRedirectStandaloneToMobile(): boolean {
+  return mode === "standalone" && (supportsTouchFirstControls() || window.innerWidth <= 720);
+}
+
+function goToMobileMode(): void {
+  window.location.href = `${window.location.pathname}?mobile=1`;
+}
+
 function syncTouchControls(): void {
-  const enabled = mode !== "embed" && state === "running" && supportsTouchFirstControls() && !keyboardPreferred && !settingsOpen;
+  const touchAllowed = mode === "mobile" || (supportsTouchFirstControls() && !keyboardPreferred);
+  const enabled = mode !== "embed" && state === "running" && touchAllowed && !settingsOpen;
   touchControls.hidden = !enabled;
   document.body.classList.toggle("touch-controls", enabled);
+}
+
+function syncMobileHud(): void {
+  mobileHud.hidden = mode !== "mobile";
+  mobileTime.textContent = formatTime(elapsed);
+  mobileBest.textContent = formatTime(bestTime);
+  mobileBullets.textContent = String(bullets.length);
 }
 
 function loadBestTime(): number {
@@ -384,7 +407,13 @@ function update(rawDt: number): void {
 
 function resizeCanvas(): void {
   const ratio = window.devicePixelRatio || 1;
-  const shellWidth = mode === "embed" ? `min(${level.arena.width}px, 100vw)` : `min(${level.arena.width}px, calc(100vw - 32px))`;
+  const mobileWidth = Math.min(
+    level.arena.width,
+    window.innerWidth - 24,
+    (window.innerHeight - 192) * (level.arena.width / level.arena.height),
+  );
+  const shellWidth =
+    mode === "embed" ? `min(${level.arena.width}px, 100vw)` : mode === "mobile" ? `${Math.max(280, mobileWidth)}px` : `min(${level.arena.width}px, calc(100vw - 32px))`;
   gameCanvas.width = level.arena.width * ratio;
   gameCanvas.height = level.arena.height * ratio;
   gameShell.style.width = shellWidth;
@@ -455,16 +484,18 @@ function render(): void {
   ctx.lineWidth = 2;
   ctx.strokeRect(1, 1, level.arena.width - 2, level.arena.height - 2);
 
-  ctx.fillStyle = "#cbd5e1";
-  ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
-  ctx.textAlign = "left";
-  ctx.textBaseline = "top";
-  ctx.fillText(`Time ${formatTime(elapsed)}`, 18, 16);
-  ctx.fillText(level.name, 18, 36);
+  if (mode !== "mobile") {
+    ctx.fillStyle = "#cbd5e1";
+    ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "left";
+    ctx.textBaseline = "top";
+    ctx.fillText(`Time ${formatTime(elapsed)}`, 18, 16);
+    ctx.fillText(level.name, 18, 36);
 
-  ctx.textAlign = "right";
-  ctx.fillText(`Best ${formatTime(bestTime)}`, level.arena.width - 18, 16);
-  ctx.fillText(`Bullets ${bullets.length}`, level.arena.width - 18, 36);
+    ctx.textAlign = "right";
+    ctx.fillText(`Best ${formatTime(bestTime)}`, level.arena.width - 18, 16);
+    ctx.fillText(`Bullets ${bullets.length}`, level.arena.width - 18, 36);
+  }
 
   for (const shooter of shooters) {
     drawCircle(shooter.pos, 12, "#f97316", "#fb923c");
@@ -491,6 +522,7 @@ function frame(now: number): void {
   syncSettingsVisibility();
   syncStartScreen();
   syncSlowPowerUi();
+  syncMobileHud();
   requestAnimationFrame(frame);
 }
 
@@ -651,12 +683,20 @@ gameCanvas.addEventListener("pointerdown", () => {
   if (settingsOpen) {
     return;
   }
+  if (shouldRedirectStandaloneToMobile()) {
+    goToMobileMode();
+    return;
+  }
   gameCanvas.focus();
   startOrRestart();
 });
 
 startCta.addEventListener("click", (event) => {
   event.stopPropagation();
+  if (shouldRedirectStandaloneToMobile()) {
+    goToMobileMode();
+    return;
+  }
   gameCanvas.focus();
   startOrRestart();
 });
@@ -761,6 +801,7 @@ async function init(): Promise<void> {
   syncSettingsVisibility();
   syncStartScreen();
   syncSlowPowerUi();
+  syncMobileHud();
   requestAnimationFrame(frame);
 }
 
