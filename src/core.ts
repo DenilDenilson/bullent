@@ -23,64 +23,101 @@ export type Shooter = {
   elapsed: number;
 };
 
-export type GameConfig = {
-  width: number;
-  height: number;
-  levelDuration: number;
-  playerRadius: number;
-  playerSpeed: number;
-  bulletRadius: number;
-  bulletSpeed: number;
-  shooterCooldown: number;
-  maxBullets: number;
+export type ShooterConfig = {
+  x: number;
+  y: number;
+  cooldown: number;
 };
 
-export const CONFIG: GameConfig = {
-  width: 460,
-  height: 560,
-  levelDuration: 30,
-  playerRadius: 10,
-  playerSpeed: 220,
-  bulletRadius: 5,
-  bulletSpeed: 180,
-  shooterCooldown: 0.9,
-  maxBullets: 80,
+export type LevelConfig = {
+  id: number;
+  name: string;
+  duration: number;
+  arena: {
+    width: number;
+    height: number;
+  };
+  player: {
+    radius: number;
+    speed: number;
+  };
+  bullets: {
+    radius: number;
+    speed: number;
+    max: number;
+  };
+  shooters: ShooterConfig[];
 };
 
-export function createPlayer(config: GameConfig = CONFIG): Player {
+export type LevelFile = {
+  version: 1;
+  levels: LevelConfig[];
+};
+
+export const DEFAULT_LEVEL: LevelConfig = {
+  id: 1,
+  name: "First Contact",
+  duration: 30,
+  arena: {
+    width: 460,
+    height: 560,
+  },
+  player: {
+    radius: 10,
+    speed: 220,
+  },
+  bullets: {
+    radius: 5,
+    speed: 180,
+    max: 80,
+  },
+  shooters: [
+    {
+      x: 230,
+      y: 28,
+      cooldown: 0.9,
+    },
+  ],
+};
+
+export function createPlayer(level: LevelConfig = DEFAULT_LEVEL): Player {
   return {
-    pos: { x: config.width / 2, y: config.height / 2 },
-    radius: config.playerRadius,
-    speed: config.playerSpeed,
+    pos: { x: level.arena.width / 2, y: level.arena.height / 2 },
+    radius: level.player.radius,
+    speed: level.player.speed,
   };
 }
 
-export function createShooter(config: GameConfig = CONFIG): Shooter {
+export function createShooter(config: ShooterConfig = DEFAULT_LEVEL.shooters[0]): Shooter {
   return {
-    pos: { x: config.width / 2, y: 28 },
-    cooldown: config.shooterCooldown,
+    pos: { x: config.x, y: config.y },
     elapsed: 0,
+    cooldown: config.cooldown,
   };
+}
+
+export function createShooters(level: LevelConfig = DEFAULT_LEVEL): Shooter[] {
+  return level.shooters.map((shooter) => createShooter(shooter));
 }
 
 export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function movePlayer(player: Player, direction: Vec2, dt: number, config: GameConfig = CONFIG): Player {
+export function movePlayer(player: Player, direction: Vec2, dt: number, level: LevelConfig = DEFAULT_LEVEL): Player {
   const length = Math.hypot(direction.x, direction.y);
   const input = length > 0 ? { x: direction.x / length, y: direction.y / length } : { x: 0, y: 0 };
 
   return {
     ...player,
     pos: {
-      x: clamp(player.pos.x + input.x * player.speed * dt, player.radius, config.width - player.radius),
-      y: clamp(player.pos.y + input.y * player.speed * dt, player.radius, config.height - player.radius),
+      x: clamp(player.pos.x + input.x * player.speed * dt, player.radius, level.arena.width - player.radius),
+      y: clamp(player.pos.y + input.y * player.speed * dt, player.radius, level.arena.height - player.radius),
     },
   };
 }
 
-export function spawnBullet(shooter: Shooter, target: Vec2, config: GameConfig = CONFIG): Bullet {
+export function spawnBullet(shooter: Shooter, target: Vec2, level: LevelConfig = DEFAULT_LEVEL): Bullet {
   const dx = target.x - shooter.pos.x;
   const dy = target.y - shooter.pos.y;
   const length = Math.hypot(dx, dy) || 1;
@@ -88,14 +125,14 @@ export function spawnBullet(shooter: Shooter, target: Vec2, config: GameConfig =
   return {
     pos: { ...shooter.pos },
     vel: {
-      x: (dx / length) * config.bulletSpeed,
-      y: (dy / length) * config.bulletSpeed,
+      x: (dx / length) * level.bullets.speed,
+      y: (dy / length) * level.bullets.speed,
     },
-    radius: config.bulletRadius,
+    radius: level.bullets.radius,
   };
 }
 
-export function moveBullet(bullet: Bullet, dt: number, config: GameConfig = CONFIG): Bullet {
+export function moveBullet(bullet: Bullet, dt: number, level: LevelConfig = DEFAULT_LEVEL): Bullet {
   const next: Bullet = {
     ...bullet,
     pos: {
@@ -105,13 +142,13 @@ export function moveBullet(bullet: Bullet, dt: number, config: GameConfig = CONF
     vel: { ...bullet.vel },
   };
 
-  if (next.pos.x < next.radius || next.pos.x > config.width - next.radius) {
-    next.pos.x = clamp(next.pos.x, next.radius, config.width - next.radius);
+  if (next.pos.x < next.radius || next.pos.x > level.arena.width - next.radius) {
+    next.pos.x = clamp(next.pos.x, next.radius, level.arena.width - next.radius);
     next.vel.x *= -1;
   }
 
-  if (next.pos.y < next.radius || next.pos.y > config.height - next.radius) {
-    next.pos.y = clamp(next.pos.y, next.radius, config.height - next.radius);
+  if (next.pos.y < next.radius || next.pos.y > level.arena.height - next.radius) {
+    next.pos.y = clamp(next.pos.y, next.radius, level.arena.height - next.radius);
     next.vel.y *= -1;
   }
 
@@ -120,4 +157,98 @@ export function moveBullet(bullet: Bullet, dt: number, config: GameConfig = CONF
 
 export function circlesTouch(a: { pos: Vec2; radius: number }, b: { pos: Vec2; radius: number }): boolean {
   return Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y) <= a.radius + b.radius;
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === "object" && value !== null;
+}
+
+function requireNumber(value: unknown, path: string): number {
+  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
+    throw new Error(`${path} must be a positive number`);
+  }
+  return value;
+}
+
+function requireString(value: unknown, path: string): string {
+  if (typeof value !== "string" || value.trim() === "") {
+    throw new Error(`${path} must be a non-empty string`);
+  }
+  return value;
+}
+
+export function parseLevelFile(input: unknown): LevelFile {
+  if (!isRecord(input)) {
+    throw new Error("levels.json must be an object");
+  }
+  if (input.version !== 1) {
+    throw new Error("levels.json version must be 1");
+  }
+  if (!Array.isArray(input.levels) || input.levels.length === 0) {
+    throw new Error("levels.json levels must contain at least one level");
+  }
+
+  return {
+    version: 1,
+    levels: input.levels.map(parseLevel),
+  };
+}
+
+function parseLevel(input: unknown, index: number): LevelConfig {
+  const path = `levels[${index}]`;
+  if (!isRecord(input)) {
+    throw new Error(`${path} must be an object`);
+  }
+
+  const arena = isRecord(input.arena) ? input.arena : {};
+  const player = isRecord(input.player) ? input.player : {};
+  const bullets = isRecord(input.bullets) ? input.bullets : {};
+  const shootersInput = input.shooters;
+  if (!Array.isArray(shootersInput) || shootersInput.length === 0) {
+    throw new Error(`${path}.shooters must contain at least one shooter`);
+  }
+
+  const level: LevelConfig = {
+    id: requireNumber(input.id, `${path}.id`),
+    name: requireString(input.name, `${path}.name`),
+    duration: requireNumber(input.duration, `${path}.duration`),
+    arena: {
+      width: requireNumber(arena.width, `${path}.arena.width`),
+      height: requireNumber(arena.height, `${path}.arena.height`),
+    },
+    player: {
+      radius: requireNumber(player.radius, `${path}.player.radius`),
+      speed: requireNumber(player.speed, `${path}.player.speed`),
+    },
+    bullets: {
+      radius: requireNumber(bullets.radius, `${path}.bullets.radius`),
+      speed: requireNumber(bullets.speed, `${path}.bullets.speed`),
+      max: requireNumber(bullets.max, `${path}.bullets.max`),
+    },
+    shooters: shootersInput.map((shooter, shooterIndex) => parseShooter(shooter, `${path}.shooters[${shooterIndex}]`)),
+  };
+
+  if (level.bullets.max < level.shooters.length) {
+    throw new Error(`${path}.bullets.max must be at least the shooter count`);
+  }
+
+  for (const [shooterIndex, shooter] of level.shooters.entries()) {
+    if (shooter.x > level.arena.width || shooter.y > level.arena.height) {
+      throw new Error(`${path}.shooters[${shooterIndex}] must be inside the arena`);
+    }
+  }
+
+  return level;
+}
+
+function parseShooter(input: unknown, path: string): ShooterConfig {
+  if (!isRecord(input)) {
+    throw new Error(`${path} must be an object`);
+  }
+
+  return {
+    x: requireNumber(input.x, `${path}.x`),
+    y: requireNumber(input.y, `${path}.y`),
+    cooldown: requireNumber(input.cooldown, `${path}.cooldown`),
+  };
 }

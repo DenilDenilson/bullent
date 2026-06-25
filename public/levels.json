@@ -1,0 +1,30 @@
+{
+  "version": 1,
+  "levels": [
+    {
+      "id": 1,
+      "name": "MVP",
+      "duration": 30,
+      "arena": {
+        "width": 460,
+        "height": 560
+      },
+      "player": {
+        "radius": 10,
+        "speed": 220
+      },
+      "bullets": {
+        "radius": 5,
+        "speed": 180,
+        "max": 80
+      },
+      "shooters": [
+        {
+          "x": 230,
+          "y": 28,
+          "cooldown": 1.5
+        }
+      ]
+    }
+  ]
+}

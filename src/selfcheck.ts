@@ -1,20 +1,34 @@
 import assert from "node:assert/strict";
-import { CONFIG, circlesTouch, createPlayer, createShooter, moveBullet, movePlayer, spawnBullet } from "./core.ts";
+import { readFileSync } from "node:fs";
+import {
+  DEFAULT_LEVEL,
+  circlesTouch,
+  createPlayer,
+  createShooters,
+  moveBullet,
+  movePlayer,
+  parseLevelFile,
+  spawnBullet,
+} from "./core.ts";
+
+const levelFile = parseLevelFile(JSON.parse(readFileSync("public/levels.json", "utf8")));
+assert.equal(levelFile.version, 1);
+assert.equal(levelFile.levels.length, 1);
 
 const player = createPlayer();
 const moved = movePlayer(player, { x: -1, y: -1 }, 10);
-assert.equal(moved.pos.x, CONFIG.playerRadius);
-assert.equal(moved.pos.y, CONFIG.playerRadius);
+assert.equal(moved.pos.x, DEFAULT_LEVEL.player.radius);
+assert.equal(moved.pos.y, DEFAULT_LEVEL.player.radius);
 
 const bounced = moveBullet(
   {
-    pos: { x: CONFIG.width - CONFIG.bulletRadius - 1, y: CONFIG.height / 2 },
+    pos: { x: DEFAULT_LEVEL.arena.width - DEFAULT_LEVEL.bullets.radius - 1, y: DEFAULT_LEVEL.arena.height / 2 },
     vel: { x: 180, y: 0 },
-    radius: CONFIG.bulletRadius,
+    radius: DEFAULT_LEVEL.bullets.radius,
   },
   1,
 );
-assert.equal(bounced.pos.x, CONFIG.width - CONFIG.bulletRadius);
+assert.equal(bounced.pos.x, DEFAULT_LEVEL.arena.width - DEFAULT_LEVEL.bullets.radius);
 assert.equal(bounced.vel.x, -180);
 
 assert.equal(
@@ -32,8 +46,10 @@ assert.equal(
   false,
 );
 
-const shot = spawnBullet(createShooter(), { x: CONFIG.width / 2, y: CONFIG.height / 2 });
-assert.ok(Math.abs(Math.hypot(shot.vel.x, shot.vel.y) - CONFIG.bulletSpeed) < 0.000001);
+const [shooter] = createShooters();
+assert.ok(shooter);
+const shot = spawnBullet(shooter, { x: DEFAULT_LEVEL.arena.width / 2, y: DEFAULT_LEVEL.arena.height / 2 });
+assert.ok(Math.abs(Math.hypot(shot.vel.x, shot.vel.y) - DEFAULT_LEVEL.bullets.speed) < 0.000001);
 assert.equal(shot.vel.x, 0);
 assert.ok(shot.vel.y > 0);
 
