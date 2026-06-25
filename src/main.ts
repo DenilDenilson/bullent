@@ -37,6 +37,11 @@ const powersBar = requireValue(document.querySelector<HTMLElement>("#powers-bar"
 const slowPower = requireValue(document.querySelector<HTMLElement>("#power-slow"), "Missing #power-slow");
 const startScreen = requireValue(document.querySelector<HTMLElement>("#start-screen"), "Missing #start-screen");
 const startCta = requireValue(document.querySelector<HTMLButtonElement>("#start-cta"), "Missing #start-cta");
+const touchControls = requireValue(document.querySelector<HTMLElement>("#touch-controls"), "Missing #touch-controls");
+const touchJoystickZone = requireValue(document.querySelector<HTMLElement>("#touch-joystick-zone"), "Missing #touch-joystick-zone");
+const touchJoystickBase = requireValue(document.querySelector<HTMLElement>("#touch-joystick-base"), "Missing #touch-joystick-base");
+const touchJoystickThumb = requireValue(document.querySelector<HTMLElement>("#touch-joystick-thumb"), "Missing #touch-joystick-thumb");
+const touchPowerZone = requireValue(document.querySelector<HTMLElement>("#touch-power-zone"), "Missing #touch-power-zone");
 const settingsToggle = requireValue(document.querySelector<HTMLButtonElement>("#settings-toggle"), "Missing #settings-toggle");
 const settingsPanel = requireValue(document.querySelector<HTMLFormElement>("#settings-panel"), "Missing #settings-panel");
 const settingsClose = requireValue(document.querySelector<HTMLButtonElement>("#settings-close"), "Missing #settings-close");
@@ -64,6 +69,10 @@ const bestTimeKey = "bullent.bestTime";
 const dashDistance = 72;
 const playerTrailInterval = 0.035;
 const playerTrailLifetime = 0.45;
+const joystickRadius = 42;
+const joystickDeadZone = 8;
+const doubleTapWindow = 320;
+const holdDelay = 180;
 
 type TrailPoint = {
   pos: Vec2;
@@ -87,6 +96,14 @@ let settingsOpen = false;
 let lastDirection: Vec2 = { x: 0, y: -1 };
 let playerTrail: TrailPoint[] = [];
 let playerTrailClock = 0;
+let touchDirection: Vec2 = { x: 0, y: 0 };
+let touchSlowHeld = false;
+let keyboardPreferred = false;
+let touchJoystickPointerId: number | null = null;
+let touchPowerPointerId: number | null = null;
+let touchPowerStartedAt = 0;
+let lastPowerTapAt = 0;
+let touchHoldTimer = 0;
 
 function cloneLevel(source: LevelConfig): LevelConfig {
   return structuredClone(source);
@@ -98,6 +115,20 @@ function numberValue(input: HTMLInputElement): number {
 
 function formatTime(seconds: number): string {
   return `${seconds.toFixed(1)}s`;
+}
+
+function supportsTouchFirstControls(): boolean {
+  return (
+    window.matchMedia("(pointer: coarse)").matches &&
+    !window.matchMedia("(any-pointer: fine)").matches &&
+    !window.matchMedia("(hover: hover)").matches
+  );
+}
+
+function syncTouchControls(): void {
+  const enabled = mode !== "embed" && state === "running" && supportsTouchFirstControls() && !keyboardPreferred && !settingsOpen;
+  touchControls.hidden = !enabled;
+  document.body.classList.toggle("touch-controls", enabled);
 }
 
 function loadBestTime(): number {
@@ -218,6 +249,7 @@ function openSettings(): void {
   settingsPanel.hidden = false;
   settingsToggle.hidden = true;
   syncStartScreen();
+  syncTouchControls();
   inputs.name.focus();
 }
 
@@ -226,6 +258,7 @@ function closeSettings(): void {
   settingsPanel.hidden = true;
   syncSettingsVisibility();
   syncStartScreen();
+  syncTouchControls();
   gameCanvas.focus();
 }
 
@@ -262,14 +295,16 @@ function startOrRestart(): void {
   if (!loadError && !settingsOpen && state !== "running") {
     reset("running");
     syncStartScreen();
+    syncTouchControls();
   }
 }
 
 function inputDirection(): Vec2 {
-  return {
+  const keyboardDirection = {
     x: Number(keys.has("arrowright") || keys.has("d")) - Number(keys.has("arrowleft") || keys.has("a")),
     y: Number(keys.has("arrowdown") || keys.has("s")) - Number(keys.has("arrowup") || keys.has("w")),
   };
+  return keyboardDirection.x !== 0 || keyboardDirection.y !== 0 ? keyboardDirection : touchDirection;
 }
 
 function activeDashDirection(): Vec2 {
@@ -315,7 +350,7 @@ function update(rawDt: number): void {
     return;
   }
 
-  const slowStep = updateSlowMotion(slowMotion, keys.has("control"), rawDt, powers.slowMotion);
+  const slowStep = updateSlowMotion(slowMotion, keys.has("control") || touchSlowHeld, rawDt, powers.slowMotion);
   slowMotion = slowStep.state;
   const dt = slowStep.simulationDt;
 
@@ -343,6 +378,7 @@ function update(rawDt: number): void {
   if (bullets.some((bullet) => circlesTouch(player, bullet))) {
     saveBestTime(elapsed);
     state = "dead";
+    syncTouchControls();
   }
 }
 
@@ -460,6 +496,8 @@ function frame(now: number): void {
 
 window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
+  keyboardPreferred = true;
+  syncTouchControls();
 
   if (settingsOpen) {
     if (key === "escape") {
@@ -489,6 +527,124 @@ window.addEventListener("keydown", (event) => {
 
 window.addEventListener("keyup", (event) => {
   keys.delete(event.key.toLowerCase());
+});
+
+function setJoystickFromPointer(event: PointerEvent): void {
+  const rect = touchJoystickZone.getBoundingClientRect();
+  const center = {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+  };
+  const dx = event.clientX - center.x;
+  const dy = event.clientY - center.y;
+  const distance = Math.hypot(dx, dy);
+  const limitedDistance = Math.min(distance, joystickRadius);
+  const angle = Math.atan2(dy, dx);
+  const offset = distance === 0 ? { x: 0, y: 0 } : { x: Math.cos(angle) * limitedDistance, y: Math.sin(angle) * limitedDistance };
+
+  touchJoystickThumb.style.transform = `translate(${offset.x}px, ${offset.y}px)`;
+  touchDirection =
+    distance < joystickDeadZone
+      ? { x: 0, y: 0 }
+      : {
+          x: offset.x / joystickRadius,
+          y: offset.y / joystickRadius,
+        };
+}
+
+function resetJoystick(): void {
+  touchJoystickPointerId = null;
+  touchDirection = { x: 0, y: 0 };
+  touchJoystickBase.classList.remove("is-active");
+  touchJoystickThumb.style.transform = "translate(0, 0)";
+}
+
+touchJoystickZone.addEventListener("pointerdown", (event) => {
+  if (settingsOpen || touchJoystickPointerId !== null) {
+    return;
+  }
+  event.preventDefault();
+  gameCanvas.focus();
+  startOrRestart();
+  touchJoystickPointerId = event.pointerId;
+  touchJoystickZone.setPointerCapture(event.pointerId);
+  touchJoystickBase.classList.add("is-active");
+  setJoystickFromPointer(event);
+});
+
+touchJoystickZone.addEventListener("pointermove", (event) => {
+  if (event.pointerId === touchJoystickPointerId) {
+    event.preventDefault();
+    setJoystickFromPointer(event);
+  }
+});
+
+touchJoystickZone.addEventListener("pointerup", (event) => {
+  if (event.pointerId === touchJoystickPointerId) {
+    resetJoystick();
+  }
+});
+
+touchJoystickZone.addEventListener("pointercancel", (event) => {
+  if (event.pointerId === touchJoystickPointerId) {
+    resetJoystick();
+  }
+});
+
+function clearTouchPowerHold(): void {
+  window.clearTimeout(touchHoldTimer);
+  touchHoldTimer = 0;
+  touchSlowHeld = false;
+  touchPowerZone.classList.remove("is-holding");
+}
+
+touchPowerZone.addEventListener("pointerdown", (event) => {
+  if (settingsOpen || touchPowerPointerId !== null) {
+    return;
+  }
+  event.preventDefault();
+  gameCanvas.focus();
+  startOrRestart();
+  touchPowerPointerId = event.pointerId;
+  touchPowerStartedAt = performance.now();
+  touchPowerZone.setPointerCapture(event.pointerId);
+  touchPowerZone.classList.add("is-pressed");
+  touchHoldTimer = window.setTimeout(() => {
+    touchSlowHeld = true;
+    touchPowerZone.classList.add("is-holding");
+  }, holdDelay);
+});
+
+touchPowerZone.addEventListener("pointerup", (event) => {
+  if (event.pointerId !== touchPowerPointerId) {
+    return;
+  }
+
+  const now = performance.now();
+  const wasHolding = touchSlowHeld;
+  touchPowerPointerId = null;
+  touchPowerZone.classList.remove("is-pressed");
+  clearTouchPowerHold();
+
+  if (!wasHolding && now - touchPowerStartedAt < holdDelay && now - lastPowerTapAt < doubleTapWindow) {
+    dashPlayer();
+    lastPowerTapAt = 0;
+    touchPowerZone.classList.add("did-dash");
+    window.setTimeout(() => touchPowerZone.classList.remove("did-dash"), 160);
+    return;
+  }
+
+  if (!wasHolding) {
+    lastPowerTapAt = now;
+  }
+});
+
+touchPowerZone.addEventListener("pointercancel", (event) => {
+  if (event.pointerId === touchPowerPointerId) {
+    touchPowerPointerId = null;
+    touchPowerZone.classList.remove("is-pressed");
+    clearTouchPowerHold();
+  }
 });
 
 gameCanvas.addEventListener("pointerdown", () => {
@@ -561,6 +717,7 @@ settingsPanel.addEventListener("submit", (event) => {
 });
 
 window.addEventListener("resize", resizeCanvas);
+window.addEventListener("resize", syncTouchControls);
 
 async function loadFirstLevel(): Promise<LevelConfig> {
   const response = await fetch("/levels.json");
@@ -599,6 +756,7 @@ async function init(): Promise<void> {
   }
 
   resizeCanvas();
+  syncTouchControls();
   render();
   syncSettingsVisibility();
   syncStartScreen();

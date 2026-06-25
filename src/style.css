@@ -345,6 +345,91 @@
     @apply min-h-5 text-xs font-semibold text-rose-300;
   }
 
+  #touch-controls {
+    @apply fixed inset-x-0 bottom-0 grid grid-cols-2;
+    height: min(28vh, 10rem);
+    z-index: 70;
+    pointer-events: none;
+    touch-action: none;
+  }
+
+  #touch-controls[hidden] {
+    display: none;
+  }
+
+  .touch-zone {
+    @apply relative;
+    pointer-events: auto;
+    touch-action: none;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  #touch-joystick-base {
+    @apply absolute left-1/2 top-1/2 grid h-24 w-24 place-items-center rounded-full border border-cyan-200/25 bg-slate-950/30 opacity-60 backdrop-blur transition;
+    transform: translate(-50%, -50%);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.04),
+      0 0 24px rgb(94 234 212 / 0.12);
+  }
+
+  #touch-joystick-base.is-active {
+    @apply border-cyan-200/70 opacity-100;
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.08),
+      0 0 32px rgb(94 234 212 / 0.28);
+  }
+
+  #touch-joystick-thumb {
+    @apply h-10 w-10 rounded-full border border-cyan-100/70 bg-cyan-200/25 transition-transform;
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.18),
+      0 0 20px rgb(125 211 252 / 0.42);
+  }
+
+  #touch-power-zone::before {
+    @apply absolute left-8 top-1/2 h-28 w-28 rounded-full border border-emerald-200/20 bg-emerald-300/10 opacity-55 backdrop-blur transition;
+    content: "";
+    transform: translateY(-50%);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.04),
+      0 0 24px rgb(34 197 94 / 0.14);
+  }
+
+  #touch-power-zone.is-pressed::before {
+    @apply opacity-90;
+    border-color: rgb(167 243 208 / 0.58);
+  }
+
+  #touch-power-zone.is-holding::before {
+    background: rgb(45 212 191 / 0.2);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.12),
+      0 0 36px rgb(45 212 191 / 0.42);
+  }
+
+  #touch-power-zone.did-dash::before {
+    background: rgb(167 139 250 / 0.2);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      0 0 42px rgb(167 139 250 / 0.5);
+  }
+
+  #touch-power-feedback {
+    @apply absolute left-11 top-1/2 grid justify-items-center gap-1 text-xs font-black uppercase;
+    width: 5.5rem;
+    transform: translateY(-50%);
+    color: rgb(226 232 240 / 0.78);
+  }
+
+  #touch-power-feedback strong {
+    color: var(--theme-primary);
+  }
+
+  body:not(.touch-controls) #touch-controls {
+    display: none;
+  }
+
   @media (max-width: 430px) {
     #start-screen {
       gap: 0.75rem;
