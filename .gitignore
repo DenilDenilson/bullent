@@ -26,3 +26,6 @@ Thumbs.db
 .idea/
 .vscode/
 !.vscode/extensions.json
+
+# File para LLMs
+content.txt

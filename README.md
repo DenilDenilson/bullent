@@ -253,30 +253,31 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 
 #### Jugador
 
-| Estado | Poder | Tipo | Efecto | Uso principal | Riesgo / Balance |
+| Estado | Poder | Tipo | Atajo | Efecto | Nota de balance |
 | --- | --- | --- | --- | --- | --- |
-| No implementado | Escudo de impacto | Defensivo | Bloquea una bala o permite sobrevivir a un golpe | Perdonar un error puntual | Debe durar poco o bloquear solo un impacto |
-| Implementado | Dash corto | Movimiento | Desplaza rápidamente al jugador en una dirección | Escapar de encierros | Puede matar al jugador si se usa mal |
-| Implementado | Camara lenta | Control temporal | Ralentiza el tiempo global mientras se mantiene Ctrl | Sobrevivir momentos caoticos | No debe durar demasiado |
-| No implementado | Pulso repelente | Control de espacio | Empuja las balas cercanas hacia afuera | Abrir espacio cuando el jugador esta rodeado | No deberia destruir todas las balas |
-| No implementado | Fase | Evasion | El jugador ignora colisiones por un instante | Atravesar una zona peligrosa | Requiere timing preciso |
-| No implementado | Gravedad inversa | Defensa avanzada | Las balas cercanas se curvan alejandose del jugador | Reducir presion cercana | Puede volver los patrones impredecibles |
-| No implementado | Limpieza parcial | Emergencia | Elimina algunas balas dentro de un radio | Recuperarse de una situacion critica | Puede bajar demasiado la dificultad |
-| No implementado | Nucleo estable | Pasivo | Al quedarse quieto, el jugador carga energia | Premiar juego arriesgado y estrategico | Quedarse quieto es peligroso |
+| 🟢 Implementado | ⚡ Destello | Movimiento | `V` | Desplaza rápidamente al jugador en una dirección | Sin cooldown; puede meterte en peligro si lo usas mal |
+| 🟢 Implementado | 🐢 Letargo | Control temporal | `Ctrl` | Ralentiza el tiempo global mientras se mantiene presionado | Energía de 3s y cooldown al agotarse |
+| 🟡 Próximo | 🧭 Presagio | Lectura táctica | TBD | Dibuja líneas hacia el próximo rebote de las balas para encontrar zonas seguras | Cooldown fijo de 2s; debe ser claro sin ensuciar la arena |
+| ⚪ Pendiente | 🛡️ Égida | Defensivo | TBD | Bloquea una bala o permite sobrevivir a un golpe | Debe durar poco o bloquear solo un impacto |
+| ⚪ Pendiente | 🌀 Pulso | Control de espacio | TBD | Empuja las balas cercanas hacia afuera | No debería destruir todas las balas |
+| ⚪ Pendiente | ✨ Desfase | Evasión | TBD | El jugador ignora colisiones por un instante | Requiere timing preciso |
+| ⚪ Pendiente | 🧲 Rechazo | Defensa avanzada | TBD | Las balas cercanas se curvan alejándose del jugador | Puede volver los patrones impredecibles |
+| ⚪ Pendiente | 💥 Purga | Emergencia | TBD | Elimina algunas balas dentro de un radio | Puede bajar demasiado la dificultad |
+| ⚪ Pendiente | 🟣 Foco | Pasivo | TBD | Al quedarse quieto, el jugador carga energía | Quedarse quieto es peligroso |
 
 #### Enemigos / disparadores
 
 | Estado | Poder enemigo | Tipo | Efecto | Uso principal | Riesgo / Balance |
 | --- | --- | --- | --- | --- | --- |
-| Implementado | Disparo normal | Base | Apunta hacia la posicion actual del jugador | Primer patron de aprendizaje | Puede volverse plano sin variantes |
-| No implementado | Disparo predictivo | Precision | Apunta hacia donde el jugador probablemente estara | Castigar movimiento en linea recta | No debe ser perfecto para evitar injusticia |
-| No implementado | Doble disparo | Presion | Lanza dos balas con separacion angular | Crear pequenos abanicos de peligro | Puede saturar rapido la pantalla |
-| No implementado | Bala pesada | Control de espacio | Dispara una bala mas grande y lenta | Bloquear rutas del jugador | Debe ser facil de leer visualmente |
-| No implementado | Bala acelerada | Escalado | La bala empieza lenta y aumenta velocidad | Subir tension con el tiempo | Puede sorprender demasiado si acelera mucho |
-| No implementado | Bala lenta | Persistencia | Bala lenta que permanece mas tiempo en pantalla | Ensuciar la arena y cerrar caminos | Muchas balas lentas pueden volver el juego injusto |
-| No implementado | Disparo giratorio | Patron | El disparador rota su angulo de disparo | Crear patrones circulares o espirales | Mejor usarlo en niveles avanzados |
-| No implementado | Shooter imantado | Seguimiento suave | Las balas corrigen ligeramente su direccion hacia el jugador | Aumentar presion constante | No debe sentirse como misil imposible |
-| No implementado | Bala divisoria | Caos progresivo | La bala se divide tras ciertos rebotes | Crear dificultad avanzada | Puede romper la curva de dificultad |
+| 🟢 Implementado | 🎯 Disparo | Base | Apunta hacia la posición actual del jugador | Primer patrón de aprendizaje | Puede volverse plano sin variantes |
+| ⚪ Pendiente | 🎯 Predict | Precisión | Apunta hacia donde el jugador probablemente estará | Castigar movimiento en línea recta | No debe ser perfecto para evitar injusticia |
+| ⚪ Pendiente | 🔁 Doble disparo | Presión | Lanza dos balas con separación angular | Crear pequeños abanicos de peligro | Puede saturar rápido la pantalla |
+| ⚪ Pendiente | 🧨 Bala pesada | Control de espacio | Dispara una bala más grande y lenta | Bloquear rutas del jugador | Debe ser fácil de leer visualmente |
+| ⚪ Pendiente | 🪃 Bala acelerada | Escalado | La bala empieza lenta y aumenta velocidad | Subir tensión con el tiempo | Puede sorprender demasiado si acelera mucho |
+| ⚪ Pendiente | 🧊 Bala lenta | Persistencia | Bala lenta que permanece más tiempo en pantalla | Ensuciar la arena y cerrar caminos | Muchas balas lentas pueden volver el juego injusto |
+| ⚪ Pendiente | 🌀 Disparo giratorio | Patrón | El disparador rota su ángulo de disparo | Crear patrones circulares o espirales | Mejor usarlo en niveles avanzados |
+| ⚪ Pendiente | 🧲 Shooter imantado | Seguimiento suave | Las balas corrigen ligeramente su dirección hacia el jugador | Aumentar presión constante | No debe sentirse como misil imposible |
+| ⚪ Pendiente | 🧬 Bala divisoria | Caos progresivo | La bala se divide tras ciertos rebotes | Crear dificultad avanzada | Puede romper la curva de dificultad |
 
 Orden recomendado:
 
@@ -285,9 +286,10 @@ Orden recomendado:
 | 1 | Jugador | Dash corto | Da habilidad, movilidad y expresividad al jugador |
 | 2 | Jugador | Escudo de impacto | Perdona errores sin eliminar el peligro |
 | 3 | Jugador | Camara lenta | Es claro, util y facil de entender |
-| 4 | Enemigo | Disparo predictivo | Hace que el movimiento del jugador importe mas |
-| 5 | Enemigo | Bala pesada | Anade variedad sin complicar demasiado |
-| 6 | Enemigo | Doble disparo | Aumenta presion de forma simple |
+| 4 | Jugador | Visualización de trayectorias | Añade lectura táctica sin subir la dificultad enemiga |
+| 5 | Enemigo | Disparo predictivo | Hace que el movimiento del jugador importe más |
+| 6 | Enemigo | Bala pesada | Añade variedad sin complicar demasiado |
+| 7 | Enemigo | Doble disparo | Aumenta presión de forma simple |
 
 Posibles mejoras:
 
