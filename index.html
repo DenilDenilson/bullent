@@ -16,8 +16,13 @@
           aria-label="Bullent game canvas"
         ></canvas>
         <button id="settings-toggle" type="button" aria-label="Configure level" title="Configure level" hidden>&#9881;</button>
-        <div id="power-dash" title="Dash corto: V" aria-label="Dash corto, tecla V">
-          <img src="/assets/powers/dash-bubble.svg" alt="" />
+        <div id="powers-bar">
+          <div id="power-dash" class="power-bubble" title="Dash corto: V" aria-label="Dash corto, tecla V">
+            <img src="/assets/powers/dash-bubble.svg" alt="" />
+          </div>
+          <div id="power-slow" class="power-bubble" title="Camara lenta: Ctrl" aria-label="Camara lenta, tecla Control">
+            <img src="/assets/powers/slow-bubble.svg" alt="" />
+          </div>
         </div>
         <form id="settings-panel" aria-label="Level settings" hidden>
           <div class="settings-heading">

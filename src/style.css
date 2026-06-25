@@ -39,12 +39,42 @@
     @apply absolute bottom-3 right-3 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-xl text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
   }
 
-  #power-dash {
-    @apply absolute bottom-3 left-3 grid h-11 w-11 place-items-center rounded-full border border-cyan-200/30 bg-slate-950/70 p-1.5 shadow-lg backdrop-blur transition hover:scale-105 hover:border-cyan-200/80;
+  #powers-bar {
+    @apply absolute bottom-3 left-3 flex gap-2;
   }
 
-  #power-dash img {
-    @apply h-full w-full;
+  .power-bubble {
+    @apply relative grid h-11 w-11 overflow-hidden rounded-full border border-cyan-200/30 bg-slate-950/70 p-1.5 shadow-lg backdrop-blur transition hover:scale-105 hover:border-cyan-200/80;
+  }
+
+  .power-bubble img {
+    @apply relative z-10 h-full w-full;
+  }
+
+  #power-slow {
+    --slow-cover: 0deg;
+  }
+
+  #power-slow::after {
+    @apply pointer-events-none absolute inset-0 z-20 rounded-full;
+    content: "";
+    background: conic-gradient(
+      from -90deg,
+      rgb(15 23 42 / 0.86) 0deg var(--slow-cover),
+      transparent var(--slow-cover) 360deg
+    );
+    box-shadow: inset 0 0 0 2px rgb(226 232 240 / 0.18);
+  }
+
+  #power-slow[data-state="active"] {
+    @apply border-teal-200/80;
+    box-shadow:
+      0 0 0 2px rgb(94 234 212 / 0.22),
+      0 0 28px rgb(45 212 191 / 0.36);
+  }
+
+  #power-slow[data-state="cooldown"] img {
+    filter: grayscale(1) brightness(0.52);
   }
 
   #settings-panel {

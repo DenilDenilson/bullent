@@ -1,19 +1,25 @@
 import "./style.css";
 import {
   DEFAULT_LEVEL,
+  DEFAULT_POWERS,
   type Bullet,
   type GameState,
   type LevelConfig,
+  type PowersConfig,
   type Player,
   type Shooter,
+  type SlowMotionState,
   type Vec2,
   circlesTouch,
   createPlayer,
   createShooters,
+  createSlowMotionState,
   moveBullet,
   movePlayer,
   parseLevelFile,
+  parsePowersConfig,
   spawnBullet,
+  updateSlowMotion,
 } from "./core.ts";
 
 const canvas = document.querySelector<HTMLCanvasElement>("#game");
@@ -27,6 +33,7 @@ function requireValue<T>(value: T | null, message: string): T {
 const gameCanvas = requireValue(canvas, "Missing #game canvas");
 const ctx = requireValue(gameCanvas.getContext("2d"), "Canvas 2D is not supported");
 const gameShell = requireValue(document.querySelector<HTMLElement>("#game-shell"), "Missing #game-shell");
+const slowPower = requireValue(document.querySelector<HTMLElement>("#power-slow"), "Missing #power-slow");
 const settingsToggle = requireValue(document.querySelector<HTMLButtonElement>("#settings-toggle"), "Missing #settings-toggle");
 const settingsPanel = requireValue(document.querySelector<HTMLFormElement>("#settings-panel"), "Missing #settings-panel");
 const settingsClose = requireValue(document.querySelector<HTMLButtonElement>("#settings-close"), "Missing #settings-close");
@@ -50,19 +57,31 @@ const inputs = {
 const keys = new Set<string>();
 const bestTimeKey = "bullent.bestTime";
 const dashDistance = 72;
+const playerTrailInterval = 0.035;
+const playerTrailLifetime = 0.45;
+
+type TrailPoint = {
+  pos: Vec2;
+  radius: number;
+  age: number;
+};
 
 let baseLevel: LevelConfig = DEFAULT_LEVEL;
 let level: LevelConfig = DEFAULT_LEVEL;
+let powers: PowersConfig = DEFAULT_POWERS;
 let state: GameState = "ready";
 let player: Player = createPlayer(level);
 let shooters: Shooter[] = createShooters(level);
 let bullets: Bullet[] = [];
+let slowMotion: SlowMotionState = createSlowMotionState(powers.slowMotion);
 let elapsed = 0;
 let bestTime = loadBestTime();
 let lastTime = performance.now();
 let loadError = "";
 let settingsOpen = false;
 let lastDirection: Vec2 = { x: 0, y: -1 };
+let playerTrail: TrailPoint[] = [];
+let playerTrailClock = 0;
 
 function cloneLevel(source: LevelConfig): LevelConfig {
   return structuredClone(source);
@@ -92,6 +111,29 @@ function saveBestTime(value: number): void {
   } catch {
     // Local storage is optional; the in-memory record still works for this session.
   }
+}
+
+function syncSlowPowerUi(): void {
+  const config = powers.slowMotion;
+  const cover =
+    slowMotion.cooldownRemaining > 0
+      ? slowMotion.cooldownRemaining / config.cooldown
+      : 1 - slowMotion.energy / config.maxEnergy;
+  const stateName =
+    slowMotion.cooldownRemaining > 0
+      ? "cooldown"
+      : slowMotion.active
+        ? "active"
+        : slowMotion.energy >= config.maxEnergy
+          ? "ready"
+          : "recharging";
+
+  slowPower.dataset.state = stateName;
+  slowPower.style.setProperty("--slow-cover", `${Math.max(0, Math.min(1, cover)) * 360}deg`);
+  slowPower.title =
+    stateName === "cooldown"
+      ? `Camara lenta: recargando ${formatTime(slowMotion.cooldownRemaining)}`
+      : `Camara lenta: Ctrl (${formatTime(slowMotion.energy)})`;
 }
 
 function validatedLevelFromForm(): LevelConfig {
@@ -197,6 +239,9 @@ function reset(nextState: GameState = "running"): void {
   player = createPlayer(level);
   shooters = createShooters(level);
   bullets = [];
+  slowMotion = createSlowMotionState(powers.slowMotion);
+  playerTrail = [];
+  playerTrailClock = 0;
   elapsed = 0;
 }
 
@@ -230,10 +275,35 @@ function dashPlayer(): void {
   player = movePlayer(player, activeDashDirection(), dashDistance / player.speed, level);
 }
 
-function update(dt: number): void {
+function updatePlayerTrail(rawDt: number): void {
+  playerTrail = playerTrail
+    .map((point) => ({ ...point, age: point.age + rawDt }))
+    .filter((point) => point.age < playerTrailLifetime);
+
+  if (!slowMotion.active) {
+    playerTrailClock = 0;
+    return;
+  }
+
+  playerTrailClock += rawDt;
+  if (playerTrailClock >= playerTrailInterval) {
+    playerTrailClock = 0;
+    playerTrail.push({
+      pos: { ...player.pos },
+      radius: player.radius,
+      age: 0,
+    });
+  }
+}
+
+function update(rawDt: number): void {
   if (state !== "running") {
     return;
   }
+
+  const slowStep = updateSlowMotion(slowMotion, keys.has("control"), rawDt, powers.slowMotion);
+  slowMotion = slowStep.state;
+  const dt = slowStep.simulationDt;
 
   elapsed += dt;
 
@@ -242,6 +312,7 @@ function update(dt: number): void {
   if (direction.x !== 0 || direction.y !== 0) {
     lastDirection = direction;
   }
+  updatePlayerTrail(rawDt);
 
   for (const shooter of shooters) {
     shooter.elapsed += dt;
@@ -281,6 +352,23 @@ function drawCircle(pos: Vec2, radius: number, fill: string, shadow = "transpare
   ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+function drawPlayerTrail(): void {
+  for (const point of playerTrail) {
+    const progress = point.age / playerTrailLifetime;
+    const alpha = Math.max(0, 1 - progress) * 0.34;
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.shadowBlur = 22;
+    ctx.shadowColor = "#5eead4";
+    ctx.fillStyle = "#a7f3d0";
+    ctx.beginPath();
+    ctx.arc(point.pos.x, point.pos.y, point.radius * (1 + progress * 0.8), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+  }
 }
 
 function drawText(): void {
@@ -330,6 +418,7 @@ function render(): void {
   for (const shooter of shooters) {
     drawCircle(shooter.pos, 12, "#f97316", "#fb923c");
   }
+  drawPlayerTrail();
   drawCircle(player.pos, player.radius, "#a78bfa", "#c4b5fd");
   for (const bullet of bullets) {
     drawCircle(bullet.pos, bullet.radius, "#22d3ee", "#67e8f9");
@@ -349,6 +438,7 @@ function frame(now: number): void {
   update(dt);
   render();
   syncSettingsVisibility();
+  syncSlowPowerUi();
   requestAnimationFrame(frame);
 }
 
@@ -464,8 +554,21 @@ async function loadFirstLevel(): Promise<LevelConfig> {
   return first;
 }
 
+async function loadPowersConfig(): Promise<PowersConfig> {
+  try {
+    const response = await fetch("/powers.json");
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+    return parsePowersConfig(await response.json());
+  } catch {
+    return DEFAULT_POWERS;
+  }
+}
+
 async function init(): Promise<void> {
   try {
+    powers = await loadPowersConfig();
     baseLevel = cloneLevel(await loadFirstLevel());
     level = cloneLevel(baseLevel);
     reset("ready");
@@ -476,6 +579,7 @@ async function init(): Promise<void> {
   resizeCanvas();
   render();
   syncSettingsVisibility();
+  syncSlowPowerUi();
   requestAnimationFrame(frame);
 }
 

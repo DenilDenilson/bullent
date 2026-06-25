@@ -257,7 +257,7 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 | --- | --- | --- | --- | --- | --- |
 | No implementado | Escudo de impacto | Defensivo | Bloquea una bala o permite sobrevivir a un golpe | Perdonar un error puntual | Debe durar poco o bloquear solo un impacto |
 | Implementado | Dash corto | Movimiento | Desplaza rápidamente al jugador en una dirección | Escapar de encierros | Puede matar al jugador si se usa mal |
-| No implementado | Camara lenta | Control temporal | Reduce la velocidad de las balas por unos segundos | Sobrevivir momentos caoticos | No debe durar demasiado |
+| Implementado | Camara lenta | Control temporal | Ralentiza el tiempo global mientras se mantiene Ctrl | Sobrevivir momentos caoticos | No debe durar demasiado |
 | No implementado | Pulso repelente | Control de espacio | Empuja las balas cercanas hacia afuera | Abrir espacio cuando el jugador esta rodeado | No deberia destruir todas las balas |
 | No implementado | Fase | Evasion | El jugador ignora colisiones por un instante | Atravesar una zona peligrosa | Requiere timing preciso |
 | No implementado | Gravedad inversa | Defensa avanzada | Las balas cercanas se curvan alejandose del jugador | Reducir presion cercana | Puede volver los patrones impredecibles |

@@ -1,0 +1,9 @@
+{
+  "version": 1,
+  "slowMotion": {
+    "maxEnergy": 3,
+    "cooldown": 5,
+    "timeScale": 0.3,
+    "rechargeRate": 1
+  }
+}

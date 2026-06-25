@@ -53,6 +53,24 @@ export type LevelFile = {
   levels: LevelConfig[];
 };
 
+export type SlowMotionConfig = {
+  maxEnergy: number;
+  cooldown: number;
+  timeScale: number;
+  rechargeRate: number;
+};
+
+export type PowersConfig = {
+  version: 1;
+  slowMotion: SlowMotionConfig;
+};
+
+export type SlowMotionState = {
+  energy: number;
+  cooldownRemaining: number;
+  active: boolean;
+};
+
 export const DEFAULT_LEVEL: LevelConfig = {
   id: 1,
   name: "First Contact",
@@ -76,6 +94,16 @@ export const DEFAULT_LEVEL: LevelConfig = {
       cooldown: 0.9,
     },
   ],
+};
+
+export const DEFAULT_POWERS: PowersConfig = {
+  version: 1,
+  slowMotion: {
+    maxEnergy: 3,
+    cooldown: 5,
+    timeScale: 0.45,
+    rechargeRate: 1,
+  },
 };
 
 export function createPlayer(level: LevelConfig = DEFAULT_LEVEL): Player {
@@ -157,6 +185,60 @@ export function circlesTouch(a: { pos: Vec2; radius: number }, b: { pos: Vec2; r
   return Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y) <= a.radius + b.radius;
 }
 
+export function createSlowMotionState(config: SlowMotionConfig = DEFAULT_POWERS.slowMotion): SlowMotionState {
+  return {
+    energy: config.maxEnergy,
+    cooldownRemaining: 0,
+    active: false,
+  };
+}
+
+export function updateSlowMotion(
+  state: SlowMotionState,
+  holding: boolean,
+  rawDt: number,
+  config: SlowMotionConfig = DEFAULT_POWERS.slowMotion,
+): { state: SlowMotionState; simulationDt: number } {
+  let energy = state.energy;
+  let cooldownRemaining = state.cooldownRemaining;
+
+  if (cooldownRemaining > 0) {
+    cooldownRemaining = Math.max(0, cooldownRemaining - rawDt);
+    if (cooldownRemaining === 0) {
+      energy = config.maxEnergy;
+    }
+
+    return {
+      simulationDt: rawDt,
+      state: { energy, cooldownRemaining, active: false },
+    };
+  }
+
+  if (holding && energy > 0) {
+    const spent = Math.min(rawDt, energy);
+    const normalTime = rawDt - spent;
+    energy = Math.max(0, energy - spent);
+
+    if (energy === 0) {
+      cooldownRemaining = config.cooldown;
+    }
+
+    return {
+      simulationDt: spent * config.timeScale + normalTime,
+      state: { energy, cooldownRemaining, active: energy > 0 },
+    };
+  }
+
+  return {
+    simulationDt: rawDt,
+    state: {
+      energy: Math.min(config.maxEnergy, energy + config.rechargeRate * rawDt),
+      cooldownRemaining: 0,
+      active: false,
+    },
+  };
+}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === "object" && value !== null;
 }
@@ -189,6 +271,31 @@ export function parseLevelFile(input: unknown): LevelFile {
   return {
     version: 1,
     levels: input.levels.map(parseLevel),
+  };
+}
+
+export function parsePowersConfig(input: unknown): PowersConfig {
+  if (!isRecord(input)) {
+    throw new Error("powers.json must be an object");
+  }
+  if (input.version !== 1) {
+    throw new Error("powers.json version must be 1");
+  }
+
+  const slowMotion = isRecord(input.slowMotion) ? input.slowMotion : {};
+  const timeScale = requireNumber(slowMotion.timeScale, "slowMotion.timeScale");
+  if (timeScale >= 1) {
+    throw new Error("slowMotion.timeScale must be less than 1");
+  }
+
+  return {
+    version: 1,
+    slowMotion: {
+      maxEnergy: requireNumber(slowMotion.maxEnergy, "slowMotion.maxEnergy"),
+      cooldown: requireNumber(slowMotion.cooldown, "slowMotion.cooldown"),
+      timeScale,
+      rechargeRate: requireNumber(slowMotion.rechargeRate, "slowMotion.rechargeRate"),
+    },
   };
 }
 
