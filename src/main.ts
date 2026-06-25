@@ -26,9 +26,31 @@ function requireValue<T>(value: T | null, message: string): T {
 
 const gameCanvas = requireValue(canvas, "Missing #game canvas");
 const ctx = requireValue(gameCanvas.getContext("2d"), "Canvas 2D is not supported");
+const gameShell = requireValue(document.querySelector<HTMLElement>("#game-shell"), "Missing #game-shell");
+const settingsToggle = requireValue(document.querySelector<HTMLButtonElement>("#settings-toggle"), "Missing #settings-toggle");
+const settingsPanel = requireValue(document.querySelector<HTMLFormElement>("#settings-panel"), "Missing #settings-panel");
+const settingsClose = requireValue(document.querySelector<HTMLButtonElement>("#settings-close"), "Missing #settings-close");
+const addShooterButton = requireValue(document.querySelector<HTMLButtonElement>("#add-shooter"), "Missing #add-shooter");
+const resetSettingsButton = requireValue(document.querySelector<HTMLButtonElement>("#reset-settings"), "Missing #reset-settings");
+const cancelSettingsButton = requireValue(document.querySelector<HTMLButtonElement>("#cancel-settings"), "Missing #cancel-settings");
+const shootersList = requireValue(document.querySelector<HTMLElement>("#shooters-list"), "Missing #shooters-list");
+const settingsError = requireValue(document.querySelector<HTMLElement>("#settings-error"), "Missing #settings-error");
+
+const inputs = {
+  name: requireValue(document.querySelector<HTMLInputElement>("#level-name"), "Missing #level-name"),
+  duration: requireValue(document.querySelector<HTMLInputElement>("#level-duration"), "Missing #level-duration"),
+  arenaWidth: requireValue(document.querySelector<HTMLInputElement>("#arena-width"), "Missing #arena-width"),
+  arenaHeight: requireValue(document.querySelector<HTMLInputElement>("#arena-height"), "Missing #arena-height"),
+  playerRadius: requireValue(document.querySelector<HTMLInputElement>("#player-radius"), "Missing #player-radius"),
+  playerSpeed: requireValue(document.querySelector<HTMLInputElement>("#player-speed"), "Missing #player-speed"),
+  bulletRadius: requireValue(document.querySelector<HTMLInputElement>("#bullet-radius"), "Missing #bullet-radius"),
+  bulletSpeed: requireValue(document.querySelector<HTMLInputElement>("#bullet-speed"), "Missing #bullet-speed"),
+  bulletMax: requireValue(document.querySelector<HTMLInputElement>("#bullet-max"), "Missing #bullet-max"),
+};
 
 const keys = new Set<string>();
 
+let baseLevel: LevelConfig = DEFAULT_LEVEL;
 let level: LevelConfig = DEFAULT_LEVEL;
 let state: GameState = "ready";
 let player: Player = createPlayer(level);
@@ -37,6 +59,115 @@ let bullets: Bullet[] = [];
 let remaining = level.duration;
 let lastTime = performance.now();
 let loadError = "";
+let settingsOpen = false;
+
+function cloneLevel(source: LevelConfig): LevelConfig {
+  return structuredClone(source);
+}
+
+function numberValue(input: HTMLInputElement): number {
+  return Number(input.value);
+}
+
+function validatedLevelFromForm(): LevelConfig {
+  const shooters = [...shootersList.querySelectorAll<HTMLElement>(".shooter-row")].map((row) => ({
+    x: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-x"), "Missing shooter x")),
+    y: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-y"), "Missing shooter y")),
+    cooldown: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-cooldown"), "Missing shooter cooldown")),
+  }));
+
+  const parsed = parseLevelFile({
+    version: 1,
+    levels: [
+      {
+        id: level.id,
+        name: inputs.name.value,
+        duration: numberValue(inputs.duration),
+        arena: {
+          width: numberValue(inputs.arenaWidth),
+          height: numberValue(inputs.arenaHeight),
+        },
+        player: {
+          radius: numberValue(inputs.playerRadius),
+          speed: numberValue(inputs.playerSpeed),
+        },
+        bullets: {
+          radius: numberValue(inputs.bulletRadius),
+          speed: numberValue(inputs.bulletSpeed),
+          max: numberValue(inputs.bulletMax),
+        },
+        shooters,
+      },
+    ],
+  });
+
+  return parsed.levels[0] ?? level;
+}
+
+function shooterRowHtml(shooter: LevelConfig["shooters"][number]): string {
+  return `
+    <div class="shooter-row">
+      <label>
+        X
+        <input class="shooter-x" type="number" min="1" step="1" value="${shooter.x}" />
+      </label>
+      <label>
+        Y
+        <input class="shooter-y" type="number" min="1" step="1" value="${shooter.y}" />
+      </label>
+      <label>
+        Cooldown
+        <input class="shooter-cooldown" type="number" min="0.1" step="0.1" value="${shooter.cooldown}" />
+      </label>
+      <button class="remove-shooter" type="button">Remove</button>
+    </div>
+  `;
+}
+
+function renderSettingsForm(source: LevelConfig): void {
+  inputs.name.value = source.name;
+  inputs.duration.value = String(source.duration);
+  inputs.arenaWidth.value = String(source.arena.width);
+  inputs.arenaHeight.value = String(source.arena.height);
+  inputs.playerRadius.value = String(source.player.radius);
+  inputs.playerSpeed.value = String(source.player.speed);
+  inputs.bulletRadius.value = String(source.bullets.radius);
+  inputs.bulletSpeed.value = String(source.bullets.speed);
+  inputs.bulletMax.value = String(source.bullets.max);
+  shootersList.innerHTML = source.shooters.map(shooterRowHtml).join("");
+}
+
+function openSettings(): void {
+  if (loadError || state === "running" || state === "won") {
+    return;
+  }
+
+  settingsOpen = true;
+  settingsError.textContent = "";
+  renderSettingsForm(level);
+  settingsPanel.hidden = false;
+  settingsToggle.hidden = true;
+  inputs.name.focus();
+}
+
+function closeSettings(): void {
+  settingsOpen = false;
+  settingsPanel.hidden = true;
+  syncSettingsVisibility();
+  gameCanvas.focus();
+}
+
+function applyLevel(nextLevel: LevelConfig): void {
+  level = cloneLevel(nextLevel);
+  reset("ready");
+  resizeCanvas();
+  render();
+}
+
+function syncSettingsVisibility(): void {
+  const canConfigure = !loadError && !settingsOpen && (state === "ready" || state === "dead");
+  settingsToggle.hidden = !canConfigure;
+}
 
 function reset(nextState: GameState = "running"): void {
   state = nextState;
@@ -47,7 +178,7 @@ function reset(nextState: GameState = "running"): void {
 }
 
 function startOrRestart(): void {
-  if (!loadError && state !== "running") {
+  if (!loadError && !settingsOpen && state !== "running") {
     reset("running");
   }
 }
@@ -93,6 +224,8 @@ function resizeCanvas(): void {
   const ratio = window.devicePixelRatio || 1;
   gameCanvas.width = level.arena.width * ratio;
   gameCanvas.height = level.arena.height * ratio;
+  gameShell.style.width = `min(${level.arena.width}px, calc(100vw - 32px))`;
+  gameShell.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
   gameCanvas.style.width = `min(${level.arena.width}px, calc(100vw - 32px))`;
   gameCanvas.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
@@ -173,11 +306,20 @@ function frame(now: number): void {
   lastTime = now;
   update(dt);
   render();
+  syncSettingsVisibility();
   requestAnimationFrame(frame);
 }
 
 window.addEventListener("keydown", (event) => {
   const key = event.key.toLowerCase();
+  if (settingsOpen) {
+    if (key === "escape") {
+      event.preventDefault();
+      closeSettings();
+    }
+    return;
+  }
+
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "spacebar"].includes(key)) {
     event.preventDefault();
   }
@@ -192,8 +334,66 @@ window.addEventListener("keyup", (event) => {
 });
 
 gameCanvas.addEventListener("pointerdown", () => {
+  if (settingsOpen) {
+    return;
+  }
   gameCanvas.focus();
   startOrRestart();
+});
+
+settingsToggle.addEventListener("click", openSettings);
+settingsClose.addEventListener("click", closeSettings);
+cancelSettingsButton.addEventListener("click", closeSettings);
+
+addShooterButton.addEventListener("click", () => {
+  shootersList.insertAdjacentHTML(
+    "beforeend",
+    shooterRowHtml({
+      x: Math.round(numberValue(inputs.arenaWidth) / 2) || level.arena.width / 2,
+      y: 28,
+      cooldown: 0.9,
+    }),
+  );
+  settingsError.textContent = "";
+});
+
+shootersList.addEventListener("click", (event) => {
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".remove-shooter");
+  if (!button) {
+    return;
+  }
+
+  const rows = shootersList.querySelectorAll(".shooter-row");
+  if (rows.length <= 1) {
+    settingsError.textContent = "Keep at least one shooter.";
+    return;
+  }
+
+  button.closest(".shooter-row")?.remove();
+  settingsError.textContent = "";
+});
+
+resetSettingsButton.addEventListener("click", () => {
+  applyLevel(baseLevel);
+  renderSettingsForm(level);
+  settingsError.textContent = "";
+});
+
+settingsPanel.addEventListener("keydown", (event) => {
+  if (event.key === "Enter") {
+    event.preventDefault();
+  }
+});
+
+settingsPanel.addEventListener("submit", (event) => {
+  event.preventDefault();
+
+  try {
+    applyLevel(validatedLevelFromForm());
+    closeSettings();
+  } catch (error) {
+    settingsError.textContent = error instanceof Error ? error.message : "Invalid level.";
+  }
 });
 
 window.addEventListener("resize", resizeCanvas);
@@ -214,7 +414,8 @@ async function loadFirstLevel(): Promise<LevelConfig> {
 
 async function init(): Promise<void> {
   try {
-    level = await loadFirstLevel();
+    baseLevel = cloneLevel(await loadFirstLevel());
+    level = cloneLevel(baseLevel);
     reset("ready");
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Unknown error";
@@ -222,6 +423,7 @@ async function init(): Promise<void> {
 
   resizeCanvas();
   render();
+  syncSettingsVisibility();
   requestAnimationFrame(frame);
 }
 

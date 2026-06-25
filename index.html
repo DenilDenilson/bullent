@@ -7,13 +7,75 @@
   </head>
   <body>
     <div id="app">
-      <canvas
-        id="game"
-        width="460"
-        height="560"
-        tabindex="0"
-        aria-label="Bullent game canvas"
-      ></canvas>
+      <div id="game-shell">
+        <canvas
+          id="game"
+          width="460"
+          height="560"
+          tabindex="0"
+          aria-label="Bullent game canvas"
+        ></canvas>
+        <button id="settings-toggle" type="button" aria-label="Configure level" title="Configure level" hidden>&#9881;</button>
+        <form id="settings-panel" aria-label="Level settings" hidden>
+          <div class="settings-heading">
+            <strong>Level</strong>
+            <button id="settings-close" type="button" aria-label="Close settings">x</button>
+          </div>
+
+          <label>
+            Name
+            <input id="level-name" type="text" autocomplete="off" />
+          </label>
+
+          <div class="settings-grid">
+            <label>
+              Duration
+              <input id="level-duration" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Arena W
+              <input id="arena-width" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Arena H
+              <input id="arena-height" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Player R
+              <input id="player-radius" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Player speed
+              <input id="player-speed" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Bullet R
+              <input id="bullet-radius" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Bullet speed
+              <input id="bullet-speed" type="number" min="1" step="1" />
+            </label>
+            <label>
+              Max bullets
+              <input id="bullet-max" type="number" min="1" step="1" />
+            </label>
+          </div>
+
+          <div class="settings-heading">
+            <strong>Shooters</strong>
+            <button id="add-shooter" type="button">Add</button>
+          </div>
+          <div id="shooters-list"></div>
+          <p id="settings-error" role="alert"></p>
+
+          <div class="settings-actions">
+            <button id="reset-settings" type="button">Reset</button>
+            <button id="cancel-settings" type="button">Cancel</button>
+            <button id="apply-settings" type="submit">Apply</button>
+          </div>
+        </form>
+      </div>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>
