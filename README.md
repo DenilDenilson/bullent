@@ -249,6 +249,46 @@ Bullent no es solo un juego pequeño. También es una excusa para practicar fund
 
 Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 
+### Roadmap de poderes
+
+#### Jugador
+
+| Estado | Poder | Tipo | Efecto | Uso principal | Riesgo / Balance |
+| --- | --- | --- | --- | --- | --- |
+| No implementado | Escudo de impacto | Defensivo | Bloquea una bala o permite sobrevivir a un golpe | Perdonar un error puntual | Debe durar poco o bloquear solo un impacto |
+| Implementado | Dash corto | Movimiento | Desplaza rápidamente al jugador en una dirección | Escapar de encierros | Puede matar al jugador si se usa mal |
+| No implementado | Camara lenta | Control temporal | Reduce la velocidad de las balas por unos segundos | Sobrevivir momentos caoticos | No debe durar demasiado |
+| No implementado | Pulso repelente | Control de espacio | Empuja las balas cercanas hacia afuera | Abrir espacio cuando el jugador esta rodeado | No deberia destruir todas las balas |
+| No implementado | Fase | Evasion | El jugador ignora colisiones por un instante | Atravesar una zona peligrosa | Requiere timing preciso |
+| No implementado | Gravedad inversa | Defensa avanzada | Las balas cercanas se curvan alejandose del jugador | Reducir presion cercana | Puede volver los patrones impredecibles |
+| No implementado | Limpieza parcial | Emergencia | Elimina algunas balas dentro de un radio | Recuperarse de una situacion critica | Puede bajar demasiado la dificultad |
+| No implementado | Nucleo estable | Pasivo | Al quedarse quieto, el jugador carga energia | Premiar juego arriesgado y estrategico | Quedarse quieto es peligroso |
+
+#### Enemigos / disparadores
+
+| Estado | Poder enemigo | Tipo | Efecto | Uso principal | Riesgo / Balance |
+| --- | --- | --- | --- | --- | --- |
+| Implementado | Disparo normal | Base | Apunta hacia la posicion actual del jugador | Primer patron de aprendizaje | Puede volverse plano sin variantes |
+| No implementado | Disparo predictivo | Precision | Apunta hacia donde el jugador probablemente estara | Castigar movimiento en linea recta | No debe ser perfecto para evitar injusticia |
+| No implementado | Doble disparo | Presion | Lanza dos balas con separacion angular | Crear pequenos abanicos de peligro | Puede saturar rapido la pantalla |
+| No implementado | Bala pesada | Control de espacio | Dispara una bala mas grande y lenta | Bloquear rutas del jugador | Debe ser facil de leer visualmente |
+| No implementado | Bala acelerada | Escalado | La bala empieza lenta y aumenta velocidad | Subir tension con el tiempo | Puede sorprender demasiado si acelera mucho |
+| No implementado | Bala lenta | Persistencia | Bala lenta que permanece mas tiempo en pantalla | Ensuciar la arena y cerrar caminos | Muchas balas lentas pueden volver el juego injusto |
+| No implementado | Disparo giratorio | Patron | El disparador rota su angulo de disparo | Crear patrones circulares o espirales | Mejor usarlo en niveles avanzados |
+| No implementado | Shooter imantado | Seguimiento suave | Las balas corrigen ligeramente su direccion hacia el jugador | Aumentar presion constante | No debe sentirse como misil imposible |
+| No implementado | Bala divisoria | Caos progresivo | La bala se divide tras ciertos rebotes | Crear dificultad avanzada | Puede romper la curva de dificultad |
+
+Orden recomendado:
+
+| Prioridad | Categoria | Poder | Motivo |
+| ---: | --- | --- | --- |
+| 1 | Jugador | Dash corto | Da habilidad, movilidad y expresividad al jugador |
+| 2 | Jugador | Escudo de impacto | Perdona errores sin eliminar el peligro |
+| 3 | Jugador | Camara lenta | Es claro, util y facil de entender |
+| 4 | Enemigo | Disparo predictivo | Hace que el movimiento del jugador importe mas |
+| 5 | Enemigo | Bala pesada | Anade variedad sin complicar demasiado |
+| 6 | Enemigo | Doble disparo | Aumenta presion de forma simple |
+
 Posibles mejoras:
 
 * 🛡️ Escudo temporal

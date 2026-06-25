@@ -49,6 +49,7 @@ const inputs = {
 
 const keys = new Set<string>();
 const bestTimeKey = "bullent.bestTime";
+const dashDistance = 72;
 
 let baseLevel: LevelConfig = DEFAULT_LEVEL;
 let level: LevelConfig = DEFAULT_LEVEL;
@@ -61,6 +62,7 @@ let bestTime = loadBestTime();
 let lastTime = performance.now();
 let loadError = "";
 let settingsOpen = false;
+let lastDirection: Vec2 = { x: 0, y: -1 };
 
 function cloneLevel(source: LevelConfig): LevelConfig {
   return structuredClone(source);
@@ -211,6 +213,23 @@ function inputDirection(): Vec2 {
   };
 }
 
+function activeDashDirection(): Vec2 {
+  const direction = inputDirection();
+  if (direction.x !== 0 || direction.y !== 0) {
+    lastDirection = direction;
+    return direction;
+  }
+  return lastDirection;
+}
+
+function dashPlayer(): void {
+  if (state !== "running") {
+    return;
+  }
+
+  player = movePlayer(player, activeDashDirection(), dashDistance / player.speed, level);
+}
+
 function update(dt: number): void {
   if (state !== "running") {
     return;
@@ -218,7 +237,11 @@ function update(dt: number): void {
 
   elapsed += dt;
 
-  player = movePlayer(player, inputDirection(), dt, level);
+  const direction = inputDirection();
+  player = movePlayer(player, direction, dt, level);
+  if (direction.x !== 0 || direction.y !== 0) {
+    lastDirection = direction;
+  }
 
   for (const shooter of shooters) {
     shooter.elapsed += dt;
@@ -347,6 +370,10 @@ window.addEventListener("keydown", (event) => {
 
   if (["arrowup", "arrowdown", "arrowleft", "arrowright", " ", "spacebar"].includes(key)) {
     event.preventDefault();
+  }
+  if (key === "v") {
+    event.preventDefault();
+    dashPlayer();
   }
   if (key === "enter" || key === " " || key === "spacebar") {
     startOrRestart();

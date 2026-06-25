@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Dash bubble">
+  <defs>
+    <radialGradient id="bubble" cx="35%" cy="28%" r="70%">
+      <stop offset="0%" stop-color="#e0f2fe"/>
+      <stop offset="35%" stop-color="#7dd3fc"/>
+      <stop offset="72%" stop-color="#8b5cf6"/>
+      <stop offset="100%" stop-color="#312e81"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="27" fill="url(#bubble)" opacity="0.95"/>
+  <circle cx="24" cy="21" r="8" fill="#ffffff" opacity="0.5"/>
+  <path d="M17 35h18l-6 10 18-18H29l6-10z" fill="#f8fafc" opacity="0.92"/>
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#cffafe" stroke-width="3" opacity="0.75"/>
+</svg>

@@ -39,6 +39,14 @@
     @apply absolute bottom-3 right-3 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-xl text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
   }
 
+  #power-dash {
+    @apply absolute bottom-3 left-3 grid h-11 w-11 place-items-center rounded-full border border-cyan-200/30 bg-slate-950/70 p-1.5 shadow-lg backdrop-blur transition hover:scale-105 hover:border-cyan-200/80;
+  }
+
+  #power-dash img {
+    @apply h-full w-full;
+  }
+
   #settings-panel {
     @apply absolute inset-3 overflow-y-auto rounded-lg border border-slate-400/20 bg-slate-950/95 p-4 text-sm text-slate-100 shadow-2xl outline-none backdrop-blur;
     max-height: calc(100% - 24px);

@@ -20,6 +20,10 @@ const moved = movePlayer(player, { x: -1, y: -1 }, 10);
 assert.equal(moved.pos.x, DEFAULT_LEVEL.player.radius);
 assert.equal(moved.pos.y, DEFAULT_LEVEL.player.radius);
 
+const dashed = movePlayer(player, { x: 1, y: 0 }, 72 / player.speed);
+assert.equal(dashed.pos.x, player.pos.x + 72);
+assert.equal(dashed.pos.y, player.pos.y);
+
 const bounced = moveBullet(
   {
     pos: { x: DEFAULT_LEVEL.arena.width - DEFAULT_LEVEL.bullets.radius - 1, y: DEFAULT_LEVEL.arena.height / 2 },
