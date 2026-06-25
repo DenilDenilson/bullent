@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Presagio bubble">
+  <defs>
+    <radialGradient id="presagioBubble" cx="34%" cy="26%" r="72%">
+      <stop offset="0%" stop-color="#ecfeff"/>
+      <stop offset="38%" stop-color="#67e8f9"/>
+      <stop offset="74%" stop-color="#14b8a6"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </radialGradient>
+  </defs>
+  <circle cx="32" cy="32" r="27" fill="url(#presagioBubble)" opacity="0.94"/>
+  <circle cx="23" cy="20" r="8" fill="#ffffff" opacity="0.4"/>
+  <path d="M14 33c5-8 11-12 18-12s13 4 18 12c-5 8-11 12-18 12S19 41 14 33Z" fill="none" stroke="#f8fafc" stroke-width="4" stroke-linejoin="round"/>
+  <circle cx="32" cy="33" r="5" fill="#f8fafc"/>
+  <path d="M18 51c14-8 27-8 40-1" fill="none" stroke="#c4b5fd" stroke-width="4" stroke-linecap="round" opacity="0.8"/>
+  <circle cx="32" cy="32" r="27" fill="none" stroke="#a7f3d0" stroke-width="3" opacity="0.72"/>
+</svg>

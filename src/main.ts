@@ -33,7 +33,10 @@ function requireValue<T>(value: T | null, message: string): T {
 const gameCanvas = requireValue(canvas, "Missing #game canvas");
 const ctx = requireValue(gameCanvas.getContext("2d"), "Canvas 2D is not supported");
 const gameShell = requireValue(document.querySelector<HTMLElement>("#game-shell"), "Missing #game-shell");
+const powersBar = requireValue(document.querySelector<HTMLElement>("#powers-bar"), "Missing #powers-bar");
 const slowPower = requireValue(document.querySelector<HTMLElement>("#power-slow"), "Missing #power-slow");
+const startScreen = requireValue(document.querySelector<HTMLElement>("#start-screen"), "Missing #start-screen");
+const startCta = requireValue(document.querySelector<HTMLButtonElement>("#start-cta"), "Missing #start-cta");
 const settingsToggle = requireValue(document.querySelector<HTMLButtonElement>("#settings-toggle"), "Missing #settings-toggle");
 const settingsPanel = requireValue(document.querySelector<HTMLFormElement>("#settings-panel"), "Missing #settings-panel");
 const settingsClose = requireValue(document.querySelector<HTMLButtonElement>("#settings-close"), "Missing #settings-close");
@@ -212,6 +215,7 @@ function openSettings(): void {
   renderSettingsForm(level);
   settingsPanel.hidden = false;
   settingsToggle.hidden = true;
+  syncStartScreen();
   inputs.name.focus();
 }
 
@@ -219,6 +223,7 @@ function closeSettings(): void {
   settingsOpen = false;
   settingsPanel.hidden = true;
   syncSettingsVisibility();
+  syncStartScreen();
   gameCanvas.focus();
 }
 
@@ -232,6 +237,12 @@ function applyLevel(nextLevel: LevelConfig): void {
 function syncSettingsVisibility(): void {
   const canConfigure = !loadError && !settingsOpen && (state === "ready" || state === "dead");
   settingsToggle.hidden = !canConfigure;
+}
+
+function syncStartScreen(): void {
+  const showStart = !loadError && !settingsOpen && state === "ready";
+  startScreen.hidden = !showStart;
+  powersBar.hidden = showStart;
 }
 
 function reset(nextState: GameState = "running"): void {
@@ -248,6 +259,7 @@ function reset(nextState: GameState = "running"): void {
 function startOrRestart(): void {
   if (!loadError && !settingsOpen && state !== "running") {
     reset("running");
+    syncStartScreen();
   }
 }
 
@@ -438,6 +450,7 @@ function frame(now: number): void {
   update(dt);
   render();
   syncSettingsVisibility();
+  syncStartScreen();
   syncSlowPowerUi();
   requestAnimationFrame(frame);
 }
@@ -479,6 +492,12 @@ gameCanvas.addEventListener("pointerdown", () => {
   if (settingsOpen) {
     return;
   }
+  gameCanvas.focus();
+  startOrRestart();
+});
+
+startCta.addEventListener("click", (event) => {
+  event.stopPropagation();
   gameCanvas.focus();
   startOrRestart();
 });
@@ -579,6 +598,7 @@ async function init(): Promise<void> {
   resizeCanvas();
   render();
   syncSettingsVisibility();
+  syncStartScreen();
   syncSlowPowerUi();
   requestAnimationFrame(frame);
 }

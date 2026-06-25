@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en">
+<html lang="es">
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -24,6 +24,59 @@
             <img src="/assets/powers/slow-bubble.svg" alt="" />
           </div>
         </div>
+        <section id="start-screen" aria-label="Pantalla de inicio de Bullent" hidden>
+          <div class="start-hero">
+            <h1>BULLENT</h1>
+            <div class="start-rule" aria-hidden="true"></div>
+            <p>BY DENIL</p>
+          </div>
+
+          <div class="start-intro">
+            <p class="start-tagline">ESQUIVA EL CAOS. ROMPE TU RÉCORD.</p>
+          </div>
+
+          <div class="start-controls" aria-label="Controles de movimiento">
+            <span>MOVIMIENTO</span>
+            <kbd>WASD</kbd>
+            <kbd>↑ ↓ ← →</kbd>
+          </div>
+
+          <div class="start-powers" aria-label="Poderes">
+            <span class="start-section-label">PODERES</span>
+            <article class="start-power-card">
+              <div class="start-power-icon">
+                <img src="/assets/powers/dash-bubble.svg" alt="" />
+              </div>
+              <div>
+                <h2>Destello</h2>
+                <p>Reposición rápida hacia tu dirección actual.</p>
+              </div>
+              <span class="start-pill">V</span>
+            </article>
+            <article class="start-power-card">
+              <div class="start-power-icon">
+                <img src="/assets/powers/slow-bubble.svg" alt="" />
+              </div>
+              <div>
+                <h2>Letargo</h2>
+                <p>Ralentiza la simulación mientras tengas energía.</p>
+              </div>
+              <span class="start-pill">CTRL</span>
+            </article>
+            <article class="start-power-card is-future">
+              <div class="start-power-icon">
+                <img src="/assets/powers/presagio-bubble.svg" alt="" />
+              </div>
+              <div>
+                <h2>Presagio</h2>
+                <p>Revela trayectorias de balas por un instante.</p>
+              </div>
+              <span class="start-pill">COMING SOON</span>
+            </article>
+          </div>
+
+          <button id="start-cta" type="button">CLICK / ENTER - INICIAR</button>
+        </section>
         <form id="settings-panel" aria-label="Level settings" hidden>
           <div class="settings-heading">
             <strong>Level</strong>
