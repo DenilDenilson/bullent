@@ -407,20 +407,23 @@ function update(rawDt: number): void {
 
 function resizeCanvas(): void {
   const ratio = window.devicePixelRatio || 1;
-  const mobileWidth = Math.min(
-    level.arena.width,
-    window.innerWidth - 24,
-    (window.innerHeight - 192) * (level.arena.width / level.arena.height),
+  const mobileControlsHeight = Math.min(160, Math.max(128, window.innerHeight * 0.18));
+  const mobileAvailableHeight = Math.max(360, window.innerHeight - (96 + mobileControlsHeight));
+  const mobileWidth = Math.max(
+    280,
+    Math.min(620, window.innerWidth - 24, mobileAvailableHeight * (level.arena.width / level.arena.height)),
   );
-  const shellWidth =
-    mode === "embed" ? `min(${level.arena.width}px, 100vw)` : mode === "mobile" ? `${Math.max(280, mobileWidth)}px` : `min(${level.arena.width}px, calc(100vw - 32px))`;
-  gameCanvas.width = level.arena.width * ratio;
-  gameCanvas.height = level.arena.height * ratio;
+  const scale = mode === "mobile" ? mobileWidth / level.arena.width : 1;
+  const shellWidth = mode === "embed" ? `min(${level.arena.width}px, 100vw)` : mode === "mobile" ? `${mobileWidth}px` : `min(${level.arena.width}px, calc(100vw - 32px))`;
+
+  document.body.style.setProperty("--mobile-game-width", `${mobileWidth}px`);
+  gameCanvas.width = Math.round(level.arena.width * ratio * scale);
+  gameCanvas.height = Math.round(level.arena.height * ratio * scale);
   gameShell.style.width = shellWidth;
   gameShell.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
   gameCanvas.style.width = shellWidth;
   gameCanvas.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
-  ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
+  ctx.setTransform(ratio * scale, 0, 0, ratio * scale, 0, 0);
 }
 
 function drawCircle(pos: Vec2, radius: number, fill: string, shadow = "transparent"): void {

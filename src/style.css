@@ -498,8 +498,8 @@
   }
 
   body.mode-mobile #standalone-page {
-    @apply grid w-screen max-w-none gap-3;
-    grid-template-rows: auto minmax(0, 1fr) minmax(8.5rem, 23dvh);
+    @apply grid w-screen max-w-none grid-cols-1 justify-items-center gap-3;
+    grid-template-rows: auto minmax(0, 1fr) clamp(8rem, 18dvh, 10rem);
     height: 100dvh;
     padding: 0.75rem;
   }
@@ -510,6 +510,7 @@
 
   body.mode-mobile #mobile-hud {
     @apply grid grid-cols-3 gap-2;
+    width: min(var(--mobile-game-width, 460px), 100%);
   }
 
   body.mode-mobile #mobile-hud[hidden] {
@@ -550,7 +551,8 @@
   }
 
   body.mode-mobile #touch-controls {
-    @apply relative inset-auto h-full w-full;
+    @apply relative inset-auto h-full;
+    width: min(100%, 62rem);
     display: grid;
   }
 
@@ -559,17 +561,17 @@
   }
 
   body.mode-mobile #touch-joystick-base {
-    @apply h-28 w-28;
+    @apply right-8 left-auto h-28 w-28;
   }
 
   body.mode-mobile #touch-power-zone::before {
-    @apply left-1/2 h-32 w-32;
-    transform: translate(-50%, -50%);
+    @apply left-8 h-32 w-32;
+    transform: translateY(-50%);
   }
 
   body.mode-mobile #touch-power-feedback {
-    @apply left-1/2;
-    transform: translate(-50%, -50%);
+    @apply left-14;
+    transform: translateY(-50%);
   }
 
   body.mode-mobile #settings-panel {
