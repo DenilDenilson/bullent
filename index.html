@@ -7,6 +7,17 @@
   </head>
   <body>
     <div id="app">
+      <main id="standalone-page">
+        <section class="standalone-copy" aria-labelledby="standalone-title">
+          <p class="standalone-kicker">portfolio game / MVP</p>
+          <h1 id="standalone-title">Bullent</h1>
+          <p>Esquiva balas, rompe tu récord y prueba poderes en una arena compacta hecha para vivir dentro de un portfolio.</p>
+          <div class="standalone-actions">
+            <a href="https://www.denil.org/">volver a denil.org</a>
+            <a href="/?embed=1">modo embed</a>
+          </div>
+        </section>
+
       <div id="game-shell">
         <canvas
           id="game"
@@ -133,6 +144,7 @@
           </div>
         </form>
       </div>
+      </main>
     </div>
     <script type="module" src="/src/main.ts"></script>
   </body>

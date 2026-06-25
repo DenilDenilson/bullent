@@ -30,6 +30,50 @@
     @apply grid min-h-screen place-items-center p-6;
   }
 
+  #standalone-page {
+    @apply grid w-full max-w-6xl grid-cols-[minmax(0,1fr)_auto] items-center gap-10;
+  }
+
+  .standalone-copy {
+    @apply max-w-xl;
+  }
+
+  .standalone-kicker {
+    @apply mb-4 text-sm font-black uppercase;
+    color: var(--theme-primary);
+  }
+
+  .standalone-copy h1 {
+    @apply m-0 text-6xl font-black;
+    color: var(--theme-text);
+    font-family: Impact, "Arial Narrow", "Bahnschrift Condensed", "Roboto Condensed", system-ui, sans-serif;
+    letter-spacing: 0;
+    line-height: 0.9;
+    text-shadow:
+      0 0 12px var(--theme-primary),
+      0 0 30px rgb(34 197 94 / 0.34);
+  }
+
+  .standalone-copy p:not(.standalone-kicker) {
+    @apply mt-5 text-lg leading-8;
+    color: #cbd5e1;
+  }
+
+  .standalone-actions {
+    @apply mt-8 flex flex-wrap gap-3;
+  }
+
+  .standalone-actions a {
+    @apply inline-flex h-10 items-center rounded-lg border px-4 text-sm font-black uppercase no-underline outline-none focus-visible:ring-2 focus-visible:ring-cyan-200;
+    color: var(--theme-text);
+    border-color: var(--theme-border);
+    background: rgb(15 23 42 / 0.64);
+  }
+
+  .standalone-actions a:first-child {
+    background: linear-gradient(90deg, rgb(20 184 166 / 0.82), rgb(34 197 94 / 0.68));
+  }
+
   #game-shell {
     @apply relative;
     width: min(460px, calc(100vw - 32px));
@@ -321,6 +365,44 @@
 
     .start-pill {
       @apply h-7 px-2;
+    }
+  }
+
+  body.mode-embed {
+    @apply min-h-0 min-w-0 overflow-hidden;
+    background: transparent;
+  }
+
+  body.mode-embed #app {
+    @apply min-h-screen p-0;
+  }
+
+  body.mode-embed #standalone-page {
+    @apply block;
+    width: min(460px, 100vw);
+  }
+
+  body.mode-embed .standalone-copy {
+    @apply hidden;
+  }
+
+  body.mode-embed #game-shell,
+  body.mode-embed #game,
+  body.mode-embed #game-shell canvas {
+    width: min(460px, 100vw);
+  }
+
+  @media (max-width: 860px) {
+    #standalone-page {
+      @apply max-w-[460px] grid-cols-1 gap-6;
+    }
+
+    .standalone-copy {
+      @apply text-center;
+    }
+
+    .standalone-actions {
+      @apply justify-center;
     }
   }
 }

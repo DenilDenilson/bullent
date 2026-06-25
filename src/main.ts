@@ -45,6 +45,8 @@ const resetSettingsButton = requireValue(document.querySelector<HTMLButtonElemen
 const cancelSettingsButton = requireValue(document.querySelector<HTMLButtonElement>("#cancel-settings"), "Missing #cancel-settings");
 const shootersList = requireValue(document.querySelector<HTMLElement>("#shooters-list"), "Missing #shooters-list");
 const settingsError = requireValue(document.querySelector<HTMLElement>("#settings-error"), "Missing #settings-error");
+const mode = new URLSearchParams(window.location.search).get("embed") === "1" ? "embed" : "standalone";
+document.body.classList.add(`mode-${mode}`);
 
 const inputs = {
   name: requireValue(document.querySelector<HTMLInputElement>("#level-name"), "Missing #level-name"),
@@ -346,11 +348,12 @@ function update(rawDt: number): void {
 
 function resizeCanvas(): void {
   const ratio = window.devicePixelRatio || 1;
+  const shellWidth = mode === "embed" ? `min(${level.arena.width}px, 100vw)` : `min(${level.arena.width}px, calc(100vw - 32px))`;
   gameCanvas.width = level.arena.width * ratio;
   gameCanvas.height = level.arena.height * ratio;
-  gameShell.style.width = `min(${level.arena.width}px, calc(100vw - 32px))`;
+  gameShell.style.width = shellWidth;
   gameShell.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
-  gameCanvas.style.width = `min(${level.arena.width}px, calc(100vw - 32px))`;
+  gameCanvas.style.width = shellWidth;
   gameCanvas.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
   ctx.setTransform(ratio, 0, 0, ratio, 0, 0);
 }
