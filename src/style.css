@@ -1,0 +1,32 @@
+@import "tailwindcss";
+@source "../index.html";
+
+@layer base {
+  body {
+    @apply min-h-screen min-w-80 bg-slate-950 text-slate-50 antialiased;
+    background:
+      radial-gradient(circle at 50% 0%, rgb(124 58 237 / 0.24), transparent 34rem),
+      linear-gradient(145deg, #020617 0%, #111827 48%, #052e2b 100%);
+  }
+}
+
+@layer components {
+  #app {
+    @apply grid min-h-screen place-items-center p-6;
+  }
+
+  #game {
+    @apply block aspect-[23/28] h-auto rounded-lg border border-slate-400/25 bg-slate-950 outline-none focus-visible:border-cyan-400;
+    width: min(460px, calc(100vw - 32px));
+    box-shadow:
+      0 24px 80px rgb(0 0 0 / 0.42),
+      0 0 48px rgb(34 211 238 / 0.14);
+  }
+
+  #game:focus-visible {
+    box-shadow:
+      0 24px 80px rgb(0 0 0 / 0.42),
+      0 0 0 3px rgb(34 211 238 / 0.28),
+      0 0 48px rgb(34 211 238 / 0.14);
+  }
+}
