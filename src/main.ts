@@ -1,4 +1,3 @@
-// @ts-ignore: CSS module declaration not available in this TS config
 import "./style.css";
 import { requireValue, getDom } from "./dom.ts"
 
@@ -26,6 +25,7 @@ import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
 import { type PowersConfig } from "./powers/index.ts";
 import { createLetargoState, type LetargoTrailPoint, type LetargoState, updateLetargo, updateLetargoTrail } from "./powers/letargo.ts";
 import { applyDestello } from "./powers/destello.ts";
+// R E N D E R I Z A D O  C A N V A S
 import { renderGame, resizeGameCanvas } from "./renderer.ts";
 
 const {
