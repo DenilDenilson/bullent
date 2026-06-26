@@ -1,4 +1,4 @@
-type PageMode = "standalone" | "embed" | "mobile";
+export type PageMode = "standalone" | "embed" | "mobile";
 
 export function getPageMode(): PageMode {
     const params = new URLSearchParams(window.location.search);

@@ -26,6 +26,7 @@ import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
 import { type PowersConfig } from "./powers/index.ts";
 import { createLetargoState, type LetargoTrailPoint, type LetargoState, updateLetargo, updateLetargoTrail } from "./powers/letargo.ts";
 import { applyDestello } from "./powers/destello.ts";
+import { renderGame, resizeGameCanvas } from "./renderer.ts";
 
 const {
   gameCanvas,
@@ -182,7 +183,7 @@ function shooterRowHtml(shooter: LevelConfig["shooters"][number]): string {
   `;
 }
 
-function renderSettingsForm(source: LevelConfig): void {
+function populateSettingsForm(source: LevelConfig): void {
   inputs.name.value = source.name;
   inputs.arenaWidth.value = String(source.arena.width);
   inputs.arenaHeight.value = String(source.arena.height);
@@ -201,7 +202,7 @@ function openSettings(): void {
 
   settingsOpen = true;
   settingsError.textContent = "";
-  renderSettingsForm(level);
+  populateSettingsForm(level);
   settingsPanel.hidden = false;
   settingsToggle.hidden = true;
   syncStartScreen();
@@ -333,115 +334,30 @@ function update(rawDt: number): void {
 }
 
 function resizeCanvas(): void {
-  const ratio = window.devicePixelRatio || 1;
-  const mobileControlsHeight = Math.min(160, Math.max(128, window.innerHeight * 0.18));
-  const mobileAvailableHeight = Math.max(360, window.innerHeight - (96 + mobileControlsHeight));
-  const mobileWidth = Math.max(
-    280,
-    Math.min(620, window.innerWidth - 24, mobileAvailableHeight * (level.arena.width / level.arena.height)),
-  );
-  const scale = mode === "mobile" ? mobileWidth / level.arena.width : 1;
-  const shellWidth = mode === "embed" ? `min(${level.arena.width}px, 100vw)` : mode === "mobile" ? `${mobileWidth}px` : `min(${level.arena.width}px, calc(100vw - 32px))`;
-
-  document.body.style.setProperty("--mobile-game-width", `${mobileWidth}px`);
-  gameCanvas.width = Math.round(level.arena.width * ratio * scale);
-  gameCanvas.height = Math.round(level.arena.height * ratio * scale);
-  gameShell.style.width = shellWidth;
-  gameShell.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
-  gameCanvas.style.width = shellWidth;
-  gameCanvas.style.aspectRatio = `${level.arena.width} / ${level.arena.height}`;
-  ctx.setTransform(ratio * scale, 0, 0, ratio * scale, 0, 0);
-}
-
-function drawCircle(pos: Vec2, radius: number, fill: string, shadow = "transparent"): void {
-  ctx.save();
-  ctx.shadowBlur = shadow === "transparent" ? 0 : 18;
-  ctx.shadowColor = shadow;
-  ctx.fillStyle = fill;
-  ctx.beginPath();
-  ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
-  ctx.fill();
-  ctx.restore();
-}
-
-function drawPlayerTrail(): void {
-  for (const point of playerTrail) {
-    const progress = point.age / powers.letargo.visual.trailLifetime;
-    const alpha = Math.max(0, 1 - progress) * 0.34;
-
-    ctx.save();
-    ctx.globalAlpha = alpha;
-    ctx.shadowBlur = 22;
-    ctx.shadowColor = "#5eead4";
-    ctx.fillStyle = "#a7f3d0";
-    ctx.beginPath();
-    ctx.arc(point.pos.x, point.pos.y, point.radius * (1 + progress * 0.8), 0, Math.PI * 2);
-    ctx.fill();
-    ctx.restore();
-  }
-}
-
-function drawText(): void {
-  ctx.fillStyle = "#f8fafc";
-  ctx.font = "700 24px Inter, ui-sans-serif, system-ui, sans-serif";
-  ctx.textAlign = "center";
-  ctx.textBaseline = "middle";
-
-  if (loadError) {
-    ctx.fillText("Level load failed", level.arena.width / 2, level.arena.height / 2);
-    ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
-    ctx.fillText(loadError, level.arena.width / 2, level.arena.height / 2 + 28);
-  } else if (state === "ready") {
-    ctx.fillText("Click / Enter to start", level.arena.width / 2, level.arena.height / 2 + 58);
-  } else if (state === "dead") {
-    ctx.fillText(`Survived ${formatTime(elapsed)}`, level.arena.width / 2, level.arena.height / 2 + 42);
-    ctx.font = "600 16px Inter, ui-sans-serif, system-ui, sans-serif";
-    ctx.fillText(`Best ${formatTime(bestTime)} · Restart?`, level.arena.width / 2, level.arena.height / 2 + 72);
-  }
+  resizeGameCanvas({
+    canvas: gameCanvas,
+    ctx,
+    shell: gameShell,
+    level,
+    mode,
+  });
 }
 
 function render(): void {
-  ctx.clearRect(0, 0, level.arena.width, level.arena.height);
-
-  const gradient = ctx.createLinearGradient(0, 0, level.arena.width, level.arena.height);
-  gradient.addColorStop(0, "#111827");
-  gradient.addColorStop(0.55, "#18181b");
-  gradient.addColorStop(1, "#052e2b");
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, level.arena.width, level.arena.height);
-
-  ctx.strokeStyle = "#334155";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, level.arena.width - 2, level.arena.height - 2);
-
-  if (mode !== "mobile") {
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText(`Time ${formatTime(elapsed)}`, 18, 16);
-    ctx.fillText(level.name, 18, 36);
-
-    ctx.textAlign = "right";
-    ctx.fillText(`Best ${formatTime(bestTime)}`, level.arena.width - 18, 16);
-    ctx.fillText(`Bullets ${bullets.length}`, level.arena.width - 18, 36);
-  }
-
-  for (const shooter of shooters) {
-    drawCircle(shooter.pos, 12, "#f97316", "#fb923c");
-  }
-  drawPlayerTrail();
-  drawCircle(player.pos, player.radius, "#a78bfa", "#c4b5fd");
-  for (const bullet of bullets) {
-    drawCircle(bullet.pos, bullet.radius, "#22d3ee", "#67e8f9");
-  }
-
-  if (state !== "running") {
-    ctx.fillStyle = "rgb(2 6 23 / 0.58)";
-    ctx.fillRect(0, 0, level.arena.width, level.arena.height);
-    drawCircle(player.pos, player.radius, "#a78bfa", "#c4b5fd");
-    drawText();
-  }
+  renderGame({
+    ctx,
+    level,
+    mode,
+    state,
+    player,
+    shooters,
+    bullets,
+    playerTrail,
+    trailLifetime: loadError ? 1 : powers.letargo.visual.trailLifetime,
+    elapsed,
+    bestTime,
+    loadError,
+  });
 }
 
 function frame(now: number): void {
@@ -665,7 +581,7 @@ shootersList.addEventListener("click", (event: any) => {
 
 resetSettingsButton.addEventListener("click", () => {
   applyLevel(baseLevel);
-  renderSettingsForm(level);
+  populateSettingsForm(level);
   settingsError.textContent = "";
 });
 
