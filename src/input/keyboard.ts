@@ -28,10 +28,15 @@ function isStartKey(key: string): boolean {
 }
 
 function shouldIgnoreTarget(target: EventTarget | null): boolean {
-  return target instanceof HTMLElement && Boolean(target.closest("button, input, form"));
+  return (
+    target instanceof HTMLElement &&
+    Boolean(target.closest("button, input, form"))
+  );
 }
 
-export function createKeyboardInput(callbacks: KeyboardInputCallbacks): KeyboardInput {
+export function createKeyboardInput(
+  callbacks: KeyboardInputCallbacks,
+): KeyboardInput {
   const keys = new Set<string>();
   let keyboardPreferred = false;
 
@@ -77,8 +82,12 @@ export function createKeyboardInput(callbacks: KeyboardInputCallbacks): Keyboard
   return {
     direction() {
       return {
-        x: Number(keys.has("arrowright") || keys.has("d")) - Number(keys.has("arrowleft") || keys.has("a")),
-        y: Number(keys.has("arrowdown") || keys.has("s")) - Number(keys.has("arrowup") || keys.has("w")),
+        x:
+          Number(keys.has("arrowright") || keys.has("d")) -
+          Number(keys.has("arrowleft") || keys.has("a")),
+        y:
+          Number(keys.has("arrowdown") || keys.has("s")) -
+          Number(keys.has("arrowup") || keys.has("w")),
       };
     },
 

@@ -1,7 +1,4 @@
-import {
-  type LevelConfig,
-  parseLevelFile,
-} from "./core.ts";
+import { type LevelConfig, parseLevelFile } from "./core.ts";
 import { type PowersConfig, parsePowersConfig } from "./powers/index.ts";
 
 export async function loadFirstLevel(): Promise<LevelConfig> {

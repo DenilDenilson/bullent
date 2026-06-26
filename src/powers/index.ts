@@ -39,8 +39,14 @@ export function parsePowersConfig(input: unknown): PowersConfig {
       timeScale,
       rechargeRate: requireNumber(letargo.rechargeRate, "letargo.rechargeRate"),
       visual: {
-        trailInterval: requireNumber(visual.trailInterval, "letargo.visual.trailInterval"),
-        trailLifetime: requireNumber(visual.trailLifetime, "letargo.visual.trailLifetime"),
+        trailInterval: requireNumber(
+          visual.trailInterval,
+          "letargo.visual.trailInterval",
+        ),
+        trailLifetime: requireNumber(
+          visual.trailLifetime,
+          "letargo.visual.trailLifetime",
+        ),
       },
     },
   };

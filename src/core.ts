@@ -88,7 +88,9 @@ export function createPlayer(level: LevelConfig = DEFAULT_LEVEL): Player {
   };
 }
 
-export function createShooter(config: ShooterConfig = DEFAULT_LEVEL.shooters[0]): Shooter {
+export function createShooter(
+  config: ShooterConfig = DEFAULT_LEVEL.shooters[0],
+): Shooter {
   return {
     pos: { x: config.x, y: config.y },
     elapsed: 0,
@@ -104,20 +106,40 @@ export function clamp(value: number, min: number, max: number): number {
   return Math.min(max, Math.max(min, value));
 }
 
-export function movePlayer(player: Player, direction: Vec2, dt: number, level: LevelConfig = DEFAULT_LEVEL): Player {
+export function movePlayer(
+  player: Player,
+  direction: Vec2,
+  dt: number,
+  level: LevelConfig = DEFAULT_LEVEL,
+): Player {
   const length = Math.hypot(direction.x, direction.y);
-  const input = length > 0 ? { x: direction.x / length, y: direction.y / length } : { x: 0, y: 0 };
+  const input =
+    length > 0
+      ? { x: direction.x / length, y: direction.y / length }
+      : { x: 0, y: 0 };
 
   return {
     ...player,
     pos: {
-      x: clamp(player.pos.x + input.x * player.speed * dt, player.radius, level.arena.width - player.radius),
-      y: clamp(player.pos.y + input.y * player.speed * dt, player.radius, level.arena.height - player.radius),
+      x: clamp(
+        player.pos.x + input.x * player.speed * dt,
+        player.radius,
+        level.arena.width - player.radius,
+      ),
+      y: clamp(
+        player.pos.y + input.y * player.speed * dt,
+        player.radius,
+        level.arena.height - player.radius,
+      ),
     },
   };
 }
 
-export function spawnBullet(shooter: Shooter, target: Vec2, level: LevelConfig = DEFAULT_LEVEL): Bullet {
+export function spawnBullet(
+  shooter: Shooter,
+  target: Vec2,
+  level: LevelConfig = DEFAULT_LEVEL,
+): Bullet {
   const dx = target.x - shooter.pos.x;
   const dy = target.y - shooter.pos.y;
   const length = Math.hypot(dx, dy) || 1;
@@ -132,7 +154,11 @@ export function spawnBullet(shooter: Shooter, target: Vec2, level: LevelConfig =
   };
 }
 
-export function moveBullet(bullet: Bullet, dt: number, level: LevelConfig = DEFAULT_LEVEL): Bullet {
+export function moveBullet(
+  bullet: Bullet,
+  dt: number,
+  level: LevelConfig = DEFAULT_LEVEL,
+): Bullet {
   const next: Bullet = {
     ...bullet,
     pos: {
@@ -142,21 +168,40 @@ export function moveBullet(bullet: Bullet, dt: number, level: LevelConfig = DEFA
     vel: { ...bullet.vel },
   };
 
-  if (next.pos.x < next.radius || next.pos.x > level.arena.width - next.radius) {
-    next.pos.x = clamp(next.pos.x, next.radius, level.arena.width - next.radius);
+  if (
+    next.pos.x < next.radius ||
+    next.pos.x > level.arena.width - next.radius
+  ) {
+    next.pos.x = clamp(
+      next.pos.x,
+      next.radius,
+      level.arena.width - next.radius,
+    );
     next.vel.x *= -1;
   }
 
-  if (next.pos.y < next.radius || next.pos.y > level.arena.height - next.radius) {
-    next.pos.y = clamp(next.pos.y, next.radius, level.arena.height - next.radius);
+  if (
+    next.pos.y < next.radius ||
+    next.pos.y > level.arena.height - next.radius
+  ) {
+    next.pos.y = clamp(
+      next.pos.y,
+      next.radius,
+      level.arena.height - next.radius,
+    );
     next.vel.y *= -1;
   }
 
   return next;
 }
 
-export function circlesTouch(a: { pos: Vec2; radius: number }, b: { pos: Vec2; radius: number }): boolean {
-  return Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y) <= a.radius + b.radius;
+export function circlesTouch(
+  a: { pos: Vec2; radius: number },
+  b: { pos: Vec2; radius: number },
+): boolean {
+  return (
+    Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y) <= a.radius + b.radius
+  );
 }
 
 export function parseLevelFile(input: unknown): LevelFile {
@@ -206,7 +251,9 @@ function parseLevel(input: unknown, index: number): LevelConfig {
       speed: requireNumber(bullets.speed, `${path}.bullets.speed`),
       max: requireNumber(bullets.max, `${path}.bullets.max`),
     },
-    shooters: shootersInput.map((shooter, shooterIndex) => parseShooter(shooter, `${path}.shooters[${shooterIndex}]`)),
+    shooters: shootersInput.map((shooter, shooterIndex) =>
+      parseShooter(shooter, `${path}.shooters[${shooterIndex}]`),
+    ),
   };
 
   if (level.bullets.max < level.shooters.length) {
@@ -215,7 +262,9 @@ function parseLevel(input: unknown, index: number): LevelConfig {
 
   for (const [shooterIndex, shooter] of level.shooters.entries()) {
     if (shooter.x > level.arena.width || shooter.y > level.arena.height) {
-      throw new Error(`${path}.shooters[${shooterIndex}] must be inside the arena`);
+      throw new Error(
+        `${path}.shooters[${shooterIndex}] must be inside the arena`,
+      );
     }
   }
 

@@ -1,4 +1,9 @@
-import { movePlayer, type LevelConfig, type Player, type Vec2 } from "../core.ts";
+import {
+  movePlayer,
+  type LevelConfig,
+  type Player,
+  type Vec2,
+} from "../core.ts";
 
 export type DestelloConfig = {
   distance: number;

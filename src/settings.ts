@@ -1,7 +1,4 @@
-import {
-  parseLevelFile,
-  type LevelConfig,
-} from "./core.ts";
+import { parseLevelFile, type LevelConfig } from "./core.ts";
 import { requireValue } from "./dom.ts";
 import { numberValue } from "./utils.ts";
 
@@ -16,7 +13,9 @@ export type SettingsInputs = {
   bulletMax: HTMLInputElement;
 };
 
-export function shooterRowHtml(shooter: LevelConfig["shooters"][number]): string {
+export function shooterRowHtml(
+  shooter: LevelConfig["shooters"][number],
+): string {
   return `
     <div class="shooter-row">
       <label>
@@ -62,10 +61,27 @@ export function readLevelFromSettingsForm(args: {
 }): LevelConfig {
   const { currentLevel, inputs, shootersList } = args;
 
-  const shooters = [...shootersList.querySelectorAll<HTMLElement>(".shooter-row")].map((row) => ({
-    x: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-x"), "Missing shooter x")),
-    y: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-y"), "Missing shooter y")),
-    cooldown: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-cooldown"), "Missing shooter cooldown")),
+  const shooters = [
+    ...shootersList.querySelectorAll<HTMLElement>(".shooter-row"),
+  ].map((row) => ({
+    x: numberValue(
+      requireValue(
+        row.querySelector<HTMLInputElement>(".shooter-x"),
+        "Missing shooter x",
+      ),
+    ),
+    y: numberValue(
+      requireValue(
+        row.querySelector<HTMLInputElement>(".shooter-y"),
+        "Missing shooter y",
+      ),
+    ),
+    cooldown: numberValue(
+      requireValue(
+        row.querySelector<HTMLInputElement>(".shooter-cooldown"),
+        "Missing shooter cooldown",
+      ),
+    ),
   }));
 
   const parsed = parseLevelFile({

@@ -1,6 +1,4 @@
-import {
-  type LevelConfig,
-} from "./core.ts";
+import { type LevelConfig } from "./core.ts";
 
 export function cloneLevel(source: LevelConfig): LevelConfig {
   return structuredClone(source);

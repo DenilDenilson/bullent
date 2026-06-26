@@ -20,8 +20,10 @@ export function syncTouchControls(args: {
     touchControls,
   } = args;
 
-  const touchAllowed = mode === "mobile" || (touchFirstControlsSupported && !keyboardPreferred);
-  const enabled = mode !== "embed" && state === "running" && touchAllowed && !settingsOpen;
+  const touchAllowed =
+    mode === "mobile" || (touchFirstControlsSupported && !keyboardPreferred);
+  const enabled =
+    mode !== "embed" && state === "running" && touchAllowed && !settingsOpen;
 
   touchControls.hidden = !enabled;
   document.body.classList.toggle("touch-controls", enabled);
@@ -76,7 +78,10 @@ export function syncLetargoPowerUi(args: {
           : "recharging";
 
   slowPower.dataset.state = stateName;
-  slowPower.style.setProperty("--slow-cover", `${Math.max(0, Math.min(1, cover)) * 360}deg`);
+  slowPower.style.setProperty(
+    "--slow-cover",
+    `${Math.max(0, Math.min(1, cover)) * 360}deg`,
+  );
 
   slowPower.title =
     stateName === "cooldown"
@@ -92,7 +97,8 @@ export function syncSettingsVisibility(args: {
 }): void {
   const { settingsToggle, loadError, settingsOpen, state } = args;
 
-  const canConfigure = !loadError && !settingsOpen && (state === "ready" || state === "dead");
+  const canConfigure =
+    !loadError && !settingsOpen && (state === "ready" || state === "dead");
 
   settingsToggle.hidden = !canConfigure;
 }
@@ -104,13 +110,7 @@ export function syncStartScreen(args: {
   settingsOpen: boolean;
   state: GameState;
 }): void {
-  const {
-    startScreen,
-    powersBar,
-    loadError,
-    settingsOpen,
-    state,
-  } = args;
+  const { startScreen, powersBar, loadError, settingsOpen, state } = args;
 
   const showStart = !loadError && !settingsOpen && state === "ready";
 

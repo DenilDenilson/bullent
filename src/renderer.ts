@@ -1,4 +1,11 @@
-import type { Bullet, GameState, LevelConfig, Player, Shooter, Vec2 } from "./core.ts";
+import type {
+  Bullet,
+  GameState,
+  LevelConfig,
+  Player,
+  Shooter,
+  Vec2,
+} from "./core.ts";
 import type { PageMode } from "./mode.ts";
 import type { LetargoTrailPoint } from "./powers/letargo.ts";
 import { formatTime } from "./utils.ts";
@@ -26,14 +33,30 @@ export type RenderGameArgs = {
   loadError: string;
 };
 
-export function resizeGameCanvas({ canvas, ctx, shell, level, mode }: ResizeGameCanvasArgs): void {
+export function resizeGameCanvas({
+  canvas,
+  ctx,
+  shell,
+  level,
+  mode,
+}: ResizeGameCanvasArgs): void {
   const ratio = window.devicePixelRatio || 1;
-  const mobileControlsHeight = Math.min(160, Math.max(128, window.innerHeight * 0.18));
-  const mobileAvailableHeight = Math.max(360, window.innerHeight - (96 + mobileControlsHeight));
+  const mobileControlsHeight = Math.min(
+    160,
+    Math.max(128, window.innerHeight * 0.18),
+  );
+  const mobileAvailableHeight = Math.max(
+    360,
+    window.innerHeight - (96 + mobileControlsHeight),
+  );
 
   const mobileWidth = Math.max(
     280,
-    Math.min(620, window.innerWidth - 24, mobileAvailableHeight * (level.arena.width / level.arena.height)),
+    Math.min(
+      620,
+      window.innerWidth - 24,
+      mobileAvailableHeight * (level.arena.width / level.arena.height),
+    ),
   );
 
   const scale = mode === "mobile" ? mobileWidth / level.arena.width : 1;
@@ -77,7 +100,12 @@ export function renderGame(args: RenderGameArgs): void {
 
   ctx.clearRect(0, 0, level.arena.width, level.arena.height);
 
-  const gradient = ctx.createLinearGradient(0, 0, level.arena.width, level.arena.height);
+  const gradient = ctx.createLinearGradient(
+    0,
+    0,
+    level.arena.width,
+    level.arena.height,
+  );
   gradient.addColorStop(0, "#111827");
   gradient.addColorStop(0.55, "#18181b");
   gradient.addColorStop(1, "#052e2b");
@@ -159,7 +187,13 @@ function drawPlayerTrail(
     ctx.shadowColor = "#5eead4";
     ctx.fillStyle = "#a7f3d0";
     ctx.beginPath();
-    ctx.arc(point.pos.x, point.pos.y, point.radius * (1 + progress * 0.8), 0, Math.PI * 2);
+    ctx.arc(
+      point.pos.x,
+      point.pos.y,
+      point.radius * (1 + progress * 0.8),
+      0,
+      Math.PI * 2,
+    );
     ctx.fill();
     ctx.restore();
   }
@@ -183,20 +217,36 @@ function drawText(
   ctx.textBaseline = "middle";
 
   if (loadError) {
-    ctx.fillText("Level load failed", level.arena.width / 2, level.arena.height / 2);
+    ctx.fillText(
+      "Level load failed",
+      level.arena.width / 2,
+      level.arena.height / 2,
+    );
     ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
     ctx.fillText(loadError, level.arena.width / 2, level.arena.height / 2 + 28);
     return;
   }
 
   if (state === "ready") {
-    ctx.fillText("Click / Enter to start", level.arena.width / 2, level.arena.height / 2 + 58);
+    ctx.fillText(
+      "Click / Enter to start",
+      level.arena.width / 2,
+      level.arena.height / 2 + 58,
+    );
     return;
   }
 
   if (state === "dead") {
-    ctx.fillText(`Survived ${formatTime(elapsed)}`, level.arena.width / 2, level.arena.height / 2 + 42);
+    ctx.fillText(
+      `Survived ${formatTime(elapsed)}`,
+      level.arena.width / 2,
+      level.arena.height / 2 + 42,
+    );
     ctx.font = "600 16px Inter, ui-sans-serif, system-ui, sans-serif";
-    ctx.fillText(`Best ${formatTime(bestTime)} · Restart?`, level.arena.width / 2, level.arena.height / 2 + 72);
+    ctx.fillText(
+      `Best ${formatTime(bestTime)} · Restart?`,
+      level.arena.width / 2,
+      level.arena.height / 2 + 72,
+    );
   }
 }

@@ -1,5 +1,5 @@
 import "./style.css";
-import { getDom } from "./dom.ts"
+import { getDom } from "./dom.ts";
 
 import {
   DEFAULT_LEVEL,
@@ -16,13 +16,25 @@ import {
   movePlayer,
   spawnBullet,
 } from "./core.ts";
-import { applyPageMode, getPageMode, goToMobileMode, shouldRedirectStandaloneToMobile, supportsTouchFirstControls } from "./mode.ts";
+import {
+  applyPageMode,
+  getPageMode,
+  goToMobileMode,
+  shouldRedirectStandaloneToMobile,
+  supportsTouchFirstControls,
+} from "./mode.ts";
 import { loadBestTime, saveBestTime } from "./storage.ts";
 import { cloneLevel, numberValue } from "./utils.ts";
 import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
 // P O D E R E S
 import { type PowersConfig } from "./powers/index.ts";
-import { createLetargoState, type LetargoTrailPoint, type LetargoState, updateLetargo, updateLetargoTrail } from "./powers/letargo.ts";
+import {
+  createLetargoState,
+  type LetargoTrailPoint,
+  type LetargoState,
+  updateLetargo,
+  updateLetargoTrail,
+} from "./powers/letargo.ts";
 import { applyDestello } from "./powers/destello.ts";
 // R E N D E R I Z A D O  C A N V A S
 import { renderGame, resizeGameCanvas } from "./renderer.ts";
@@ -72,8 +84,8 @@ const {
   inputs,
 } = getDom();
 
-const mode = getPageMode()
-applyPageMode(mode)
+const mode = getPageMode();
+applyPageMode(mode);
 
 let baseLevel: LevelConfig = DEFAULT_LEVEL;
 let level: LevelConfig = DEFAULT_LEVEL;
@@ -92,6 +104,7 @@ let lastDirection: Vec2 = { x: 0, y: -1 };
 let playerTrail: LetargoTrailPoint[] = [];
 let playerTrailClock = 0;
 
+// WRAPERS
 
 function syncTouchControls(): void {
   syncTouchControlsUi({
@@ -143,6 +156,35 @@ function syncStartScreen(): void {
     state,
   });
 }
+
+function resizeCanvas(): void {
+  resizeGameCanvas({
+    canvas: gameCanvas,
+    ctx,
+    shell: gameShell,
+    level,
+    mode,
+  });
+}
+
+function render(): void {
+  renderGame({
+    ctx,
+    level,
+    mode,
+    state,
+    player,
+    shooters,
+    bullets,
+    playerTrail,
+    trailLifetime: loadError ? 1 : powers.letargo.visual.trailLifetime,
+    elapsed,
+    bestTime,
+    loadError,
+  });
+}
+
+// F U N C I O N A L E S
 
 function openSettings(): void {
   if (loadError || state === "running") {
@@ -230,12 +272,11 @@ function updatePlayerTrail(rawDt: number): void {
     player,
     rawDt,
     active: letargo.active,
-    config: powers.letargo
+    config: powers.letargo,
   });
 
   playerTrail = nextTrail.trail;
-  playerTrailClock = nextTrail.clock
-
+  playerTrailClock = nextTrail.clock;
 }
 
 function update(rawDt: number): void {
@@ -243,7 +284,12 @@ function update(rawDt: number): void {
     return;
   }
 
-  const slowStep = updateLetargo(letargo,keyboardInput.isPressed("control")  || touchInput.isSlowHeld(), rawDt, powers.letargo);
+  const slowStep = updateLetargo(
+    letargo,
+    keyboardInput.isPressed("control") || touchInput.isSlowHeld(),
+    rawDt,
+    powers.letargo,
+  );
   letargo = slowStep.state;
   const dt = slowStep.simulationDt;
 
@@ -273,33 +319,6 @@ function update(rawDt: number): void {
     state = "dead";
     syncTouchControls();
   }
-}
-
-function resizeCanvas(): void {
-  resizeGameCanvas({
-    canvas: gameCanvas,
-    ctx,
-    shell: gameShell,
-    level,
-    mode,
-  });
-}
-
-function render(): void {
-  renderGame({
-    ctx,
-    level,
-    mode,
-    state,
-    player,
-    shooters,
-    bullets,
-    playerTrail,
-    trailLifetime: loadError ? 1 : powers.letargo.visual.trailLifetime,
-    elapsed,
-    bestTime,
-    loadError,
-  });
 }
 
 function frame(now: number): void {
@@ -394,7 +413,8 @@ addShooterButton.addEventListener("click", () => {
   shootersList.insertAdjacentHTML(
     "beforeend",
     shooterRowHtml({
-      x: Math.round(numberValue(inputs.arenaWidth) / 2) || level.arena.width / 2,
+      x:
+        Math.round(numberValue(inputs.arenaWidth) / 2) || level.arena.width / 2,
       y: 28,
       cooldown: 0.9,
     }),
@@ -403,7 +423,9 @@ addShooterButton.addEventListener("click", () => {
 });
 
 shootersList.addEventListener("click", (event: any) => {
-  const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".remove-shooter");
+  const button = (event.target as HTMLElement).closest<HTMLButtonElement>(
+    ".remove-shooter",
+  );
   if (!button) {
     return;
   }
@@ -439,15 +461,16 @@ settingsPanel.addEventListener("submit", (event: any) => {
 
   try {
     applyLevel(
-    readLevelFromSettingsForm({
-      currentLevel: level,
-      inputs,
-      shootersList,
-    }),
-  );
+      readLevelFromSettingsForm({
+        currentLevel: level,
+        inputs,
+        shootersList,
+      }),
+    );
     closeSettings();
   } catch (error) {
-    settingsError.textContent = error instanceof Error ? error.message : "Invalid level.";
+    settingsError.textContent =
+      error instanceof Error ? error.message : "Invalid level.";
   }
 });
 
@@ -463,11 +486,11 @@ async function init(): Promise<void> {
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Unknown error";
 
-    resizeCanvas()
-    render()
-    syncSettingsVisibility()
-    syncStartScreen()
-    syncMobileHud()
+    resizeCanvas();
+    render();
+    syncSettingsVisibility();
+    syncStartScreen();
+    syncMobileHud();
 
     return;
   }
