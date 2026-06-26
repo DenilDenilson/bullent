@@ -12,8 +12,15 @@ import {
 } from "./core.ts";
 import { applyDestello } from "./powers/destello.ts";
 import { createLetargoState, updateLetargo } from "./powers/letargo.ts";
+import {
+  activatePresagio,
+  computePresagioSegments,
+  createPresagioState,
+  updatePresagio,
+} from "./powers/presagio.ts";
 import { parsePowersConfig } from "./powers/index.ts";
 import {
+  activatePresagioGameSession,
   createGameSession,
   dashGameSession,
   resetGameSession,
@@ -32,6 +39,8 @@ const powers = parsePowersConfig(
 assert.equal(powers.destello.distance, 72);
 assert.equal(powers.letargo.maxEnergy, 3);
 assert.equal(powers.letargo.visual.trailLifetime, 0.45);
+assert.equal(powers.presagio.cooldown, 2);
+assert.equal(powers.presagio.duration, 0.85);
 
 const player = createPlayer();
 
@@ -126,6 +135,42 @@ letargoStep = updateLetargo(
 assert.equal(letargoStep.state.energy, powers.letargo.maxEnergy);
 assert.equal(letargoStep.state.cooldownRemaining, 0);
 
+let presagio = createPresagioState();
+
+assert.equal(presagio.activeRemaining, 0);
+assert.equal(presagio.cooldownRemaining, 0);
+
+presagio = activatePresagio(presagio, {
+  cooldown: 2,
+  duration: 0.85,
+});
+
+assert.equal(presagio.activeRemaining, 0.85);
+assert.equal(presagio.cooldownRemaining, 2);
+
+presagio = updatePresagio(presagio, 0.5);
+
+assert.ok(Math.abs(presagio.activeRemaining - 0.35) < 0.000001);
+assert.equal(presagio.cooldownRemaining, 1.5);
+
+const presagioSegments = computePresagioSegments(
+  [
+    {
+      pos: { x: 100, y: 100 },
+      vel: { x: 180, y: 0 },
+      radius: DEFAULT_LEVEL.bullets.radius,
+    },
+  ],
+  DEFAULT_LEVEL,
+);
+
+assert.equal(presagioSegments.length, 1);
+assert.equal(
+  presagioSegments[0]?.to.x,
+  DEFAULT_LEVEL.arena.width - DEFAULT_LEVEL.bullets.radius,
+);
+assert.equal(presagioSegments[0]?.to.y, 100);
+
 const session = createGameSession({
   level: DEFAULT_LEVEL,
   powers,
@@ -149,6 +194,12 @@ const updateResult = updateGameSession(session, {
   direction: { x: 0, y: 0 },
   slowHeld: false,
 });
+
+activatePresagioGameSession(session);
+
+assert.equal(session.presagio.cooldownRemaining, powers.presagio.cooldown);
+assert.ok(session.presagio.activeRemaining > 0);
+assert.ok(Array.isArray(session.presagioSegments));
 
 assert.equal(updateResult.died, false);
 assert.equal(session.elapsed, 1);

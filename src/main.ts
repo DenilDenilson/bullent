@@ -21,6 +21,7 @@ import { cloneLevel, numberValue } from "./utils.ts";
 import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
 // S E S S I O N
 import {
+  activatePresagioGameSession,
   createGameSession,
   dashGameSession,
   resetGameSession,
@@ -42,6 +43,7 @@ import { createTouchInput } from "./input/touch.ts";
 // UI
 import {
   syncLetargoPowerUi,
+  syncPresagioPowerUi,
   syncMobileHud as syncMobileHudUi,
   syncSettingsVisibility as syncSettingsVisibilityUi,
   syncStartScreen as syncStartScreenUi,
@@ -58,6 +60,7 @@ const {
   mobileBullets,
   powersBar,
   slowPower,
+  presagioPower,
   startScreen,
   startCta,
   touchControls,
@@ -132,6 +135,18 @@ function syncSlowPowerUi(): void {
   });
 }
 
+function syncPresagioPower(): void {
+  if (!session) {
+    return;
+  }
+
+  syncPresagioPowerUi({
+    presagioPower,
+    presagio: session.presagio,
+    config: session.powers.presagio,
+  });
+}
+
 function syncSettingsVisibility(): void {
   syncSettingsVisibilityUi({
     settingsToggle,
@@ -173,6 +188,7 @@ function render(): void {
     shooters: session?.shooters ?? createShooters(level),
     bullets: session?.bullets ?? [],
     playerTrail: session?.playerTrail ?? [],
+    presagioSegments: session?.presagioSegments ?? [],
     trailLifetime:
       loadError || !session ? 1 : session.powers.letargo.visual.trailLifetime,
     elapsed: session?.elapsed ?? 0,
@@ -249,6 +265,12 @@ function dashPlayer(): void {
   dashGameSession(session, inputDirection());
 }
 
+function activatePresagioPower(): void {
+  if (!session) return;
+
+  activatePresagioGameSession(session);
+}
+
 function update(rawDt: number): void {
   if (!session) {
     return;
@@ -274,6 +296,7 @@ function frame(now: number): void {
   syncSettingsVisibility();
   syncStartScreen();
   syncSlowPowerUi();
+  syncPresagioPower();
   syncMobileHud();
   requestAnimationFrame(frame);
 }
@@ -291,6 +314,10 @@ const keyboardInput = createKeyboardInput({
 
   onDash: () => {
     dashPlayer();
+  },
+
+  onPresagio: () => {
+    activatePresagioPower();
   },
 
   onStart: () => {
@@ -456,6 +483,7 @@ async function init(): Promise<void> {
   syncSettingsVisibility();
   syncStartScreen();
   syncSlowPowerUi();
+  syncPresagioPower();
   syncMobileHud();
   requestAnimationFrame(frame);
 }

@@ -21,6 +21,15 @@ import {
   updateLetargo,
   updateLetargoTrail,
 } from "./powers/letargo.ts";
+import {
+  activatePresagio,
+  computePresagioSegments,
+  createPresagioState,
+  isPresagioActive,
+  updatePresagio,
+  type PresagioSegment,
+  type PresagioState,
+} from "./powers/presagio.ts";
 import { cloneLevel } from "./utils.ts";
 
 export type GameSession = {
@@ -31,6 +40,8 @@ export type GameSession = {
   shooters: Shooter[];
   bullets: Bullet[];
   letargo: LetargoState;
+  presagio: PresagioState;
+  presagioSegments: PresagioSegment[];
   elapsed: number;
   lastDirection: Vec2;
   playerTrail: LetargoTrailPoint[];
@@ -56,6 +67,8 @@ export function createGameSession(args: {
     shooters: createShooters(level),
     bullets: [],
     letargo: createLetargoState(args.powers.letargo),
+    presagio: createPresagioState(),
+    presagioSegments: [],
     elapsed: 0,
     lastDirection: { x: 0, y: -1 },
     playerTrail: [],
@@ -81,6 +94,8 @@ export function resetGameSession(
   session.shooters = createShooters(session.level);
   session.bullets = [];
   session.letargo = createLetargoState(session.powers.letargo);
+  session.presagio = createPresagioState();
+  session.presagioSegments = [];
   session.elapsed = 0;
   session.lastDirection = { x: 0, y: -1 };
   session.playerTrail = [];
@@ -98,6 +113,19 @@ export function dashGameSession(session: GameSession, direction: Vec2): void {
     session.level,
     session.powers.destello,
   );
+}
+
+export function activatePresagioGameSession(session: GameSession): void {
+  if (session.state !== "running") return;
+
+  session.presagio = activatePresagio(
+    session.presagio,
+    session.powers.presagio,
+  );
+
+  session.presagioSegments = isPresagioActive(session.presagio)
+    ? computePresagioSegments(session.bullets, session.level)
+    : [];
 }
 
 export function updateGameSession(
@@ -119,6 +147,7 @@ export function updateGameSession(
     session.powers.letargo,
   );
   session.letargo = letargoStep.state;
+  session.presagio = updatePresagio(session.presagio, args.rawDt);
 
   const dt = letargoStep.simulationDt;
 
@@ -137,6 +166,9 @@ export function updateGameSession(
   updateSessionTrail(session, args.rawDt);
   updateSessionShooters(session, dt);
   updateSessionBullets(session, dt);
+  session.presagioSegments = isPresagioActive(session.presagio)
+    ? computePresagioSegments(session.bullets, session.level)
+    : [];
 
   if (session.bullets.some((bullet) => circlesTouch(session.player, bullet))) {
     session.state = "dead";

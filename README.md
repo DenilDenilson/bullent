@@ -348,6 +348,12 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 | ⚪ Pendiente | 🧬 Bala divisoria | Caos progresivo | La bala se divide tras ciertos rebotes | Crear dificultad avanzada | Puede romper la curva de dificultad |
 
 ### Roadmap de IA / bots
+- Objetos para recoger como rombos dorados que aparecen aleatoriamene que suman puntos en el reloj, suman segundos
+- Cambiar los enemigos de circulo naranja a triangulos naranjas que disparan por su vértice
+- Posibilidad de atacar, cuando se quiera implementar niveles en un futuro
+- Hacer esta sección más bonita
+
+### Roadmap de IA / bots
 
 | Estado | Idea | Descripción | Nota |
 | --- | --- | --- | --- |

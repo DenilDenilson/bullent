@@ -8,6 +8,7 @@ import type {
 } from "./core.ts";
 import type { PageMode } from "./mode.ts";
 import type { LetargoTrailPoint } from "./powers/letargo.ts";
+import type { PresagioSegment } from "./powers/presagio.ts";
 import { formatTime } from "./utils.ts";
 
 export type ResizeGameCanvasArgs = {
@@ -27,6 +28,7 @@ export type RenderGameArgs = {
   shooters: Shooter[];
   bullets: Bullet[];
   playerTrail: LetargoTrailPoint[];
+  presagioSegments: PresagioSegment[];
   trailLifetime: number;
   elapsed: number;
   bestTime: number;
@@ -92,6 +94,7 @@ export function renderGame(args: RenderGameArgs): void {
     shooters,
     bullets,
     playerTrail,
+    presagioSegments,
     trailLifetime,
     elapsed,
     bestTime,
@@ -136,6 +139,8 @@ export function renderGame(args: RenderGameArgs): void {
 
   drawPlayerTrail(ctx, playerTrail, trailLifetime);
   drawCircle(ctx, player.pos, player.radius, "#a78bfa", "#c4b5fd");
+
+  drawPresagioSegments(ctx, presagioSegments);
 
   for (const bullet of bullets) {
     drawCircle(ctx, bullet.pos, bullet.radius, "#22d3ee", "#67e8f9");
@@ -197,6 +202,36 @@ function drawPlayerTrail(
     ctx.fill();
     ctx.restore();
   }
+}
+
+function drawPresagioSegments(
+  ctx: CanvasRenderingContext2D,
+  segments: PresagioSegment[],
+): void {
+  if (segments.length === 0) {
+    return;
+  }
+
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = "rgb(222 16 95 / 0.72)";
+  ctx.shadowBlur = 16;
+  ctx.shadowColor = "#e617ca";
+  ctx.setLineDash([8, 8]);
+
+  for (const segment of segments) {
+    ctx.beginPath();
+    ctx.moveTo(segment.from.x, segment.from.y);
+    ctx.lineTo(segment.to.x, segment.to.y);
+    ctx.stroke();
+
+    ctx.beginPath();
+    ctx.arc(segment.to.x, segment.to.y, 4, 0, Math.PI * 2);
+    ctx.fillStyle = "rgb(236 254 255 / 0.92)";
+    ctx.fill();
+  }
+
+  ctx.restore();
 }
 
 function drawText(

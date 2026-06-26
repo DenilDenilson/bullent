@@ -43,6 +43,10 @@ export function getDom() {
       document.querySelector<HTMLElement>("#power-slow"),
       "Missing #power-slow",
     ),
+    presagioPower: requireValue(
+      document.querySelector<HTMLElement>("#power-presagio"),
+      "Missing #power-presagio",
+    ),
     startScreen: requireValue(
       document.querySelector<HTMLElement>("#start-screen"),
       "Missing #start-screen",

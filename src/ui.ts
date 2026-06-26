@@ -1,6 +1,7 @@
 import type { GameState } from "./core.ts";
 import type { PageMode } from "./mode.ts";
 import type { LetargoConfig, LetargoState } from "./powers/letargo.ts";
+import type { PresagioConfig, PresagioState } from "./powers/presagio.ts";
 import { formatTime } from "./utils.ts";
 
 export function syncTouchControls(args: {
@@ -87,6 +88,33 @@ export function syncLetargoPowerUi(args: {
     stateName === "cooldown"
       ? `Letargo: recargando ${formatTime(letargo.cooldownRemaining)}`
       : `Letargo: Ctrl (${formatTime(letargo.energy)})`;
+}
+
+export function syncPresagioPowerUi(args: {
+  presagioPower: HTMLElement;
+  presagio: PresagioState;
+  config: PresagioConfig;
+}): void {
+  const { presagioPower, presagio, config } = args;
+
+  const active = presagio.activeRemaining > 0;
+  const coolingDown = presagio.cooldownRemaining > 0;
+
+  const cover =
+    active || !coolingDown ? 0 : presagio.cooldownRemaining / config.cooldown;
+
+  const stateName = active ? "active" : coolingDown ? "cooldown" : "ready";
+
+  presagioPower.dataset.state = stateName;
+  presagioPower.style.setProperty(
+    "--presagio-cover",
+    `${Math.max(0, Math.min(1, cover)) * 360}deg`,
+  );
+
+  presagioPower.title =
+    stateName === "cooldown"
+      ? `Presagio: recargando ${formatTime(presagio.cooldownRemaining)}`
+      : "Presagio: C";
 }
 
 export function syncSettingsVisibility(args: {

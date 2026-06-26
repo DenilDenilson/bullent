@@ -140,6 +140,32 @@
     filter: grayscale(1) brightness(0.52);
   }
 
+  #power-presagio {
+    --presagio-cover: 0deg;
+  }
+
+  #power-presagio::after {
+    @apply pointer-events-none absolute inset-0 z-20 rounded-full;
+    content: "";
+    background: conic-gradient(
+      from -90deg,
+      rgb(15 23 42 / 0.86) 0deg var(--presagio-cover),
+      transparent var(--presagio-cover) 360deg
+    );
+    box-shadow: inset 0 0 0 2px rgb(226 232 240 / 0.18);
+  }
+
+  #power-presagio[data-state="active"] {
+    @apply border-cyan-100/90;
+    box-shadow:
+      0 0 0 2px rgb(103 232 249 / 0.24),
+      0 0 30px rgb(103 232 249 / 0.42);
+  }
+
+  #power-presagio[data-state="cooldown"] img {
+    filter: grayscale(1) brightness(0.52);
+  }
+
   #start-screen {
     @apply absolute inset-0 z-30 grid overflow-hidden rounded-lg;
     grid-template-rows: auto auto auto minmax(0, 1fr) auto;

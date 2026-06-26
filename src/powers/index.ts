@@ -2,11 +2,13 @@ import { isRecord, requireNumber } from "../validation.ts";
 
 import type { DestelloConfig } from "./destello.ts";
 import type { LetargoConfig } from "./letargo.ts";
+import type { PresagioConfig } from "./presagio.ts";
 
 export type PowersConfig = {
   version: 1;
   destello: DestelloConfig;
   letargo: LetargoConfig;
+  presagio: PresagioConfig;
 };
 
 export function parsePowersConfig(input: unknown): PowersConfig {
@@ -21,6 +23,7 @@ export function parsePowersConfig(input: unknown): PowersConfig {
   const destello = isRecord(input.destello) ? input.destello : {};
   const letargo = isRecord(input.letargo) ? input.letargo : {};
   const visual = isRecord(letargo.visual) ? letargo.visual : {};
+  const presagio = isRecord(input.presagio) ? input.presagio : {};
 
   const timeScale = requireNumber(letargo.timeScale, "letargo.timeScale");
 
@@ -48,6 +51,10 @@ export function parsePowersConfig(input: unknown): PowersConfig {
           "letargo.visual.trailLifetime",
         ),
       },
+    },
+    presagio: {
+      cooldown: requireNumber(presagio.cooldown, "presagio.cooldown"),
+      duration: requireNumber(presagio.duration, "presagio.duration"),
     },
   };
 }

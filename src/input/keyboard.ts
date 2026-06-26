@@ -12,6 +12,7 @@ export type KeyboardInputCallbacks = {
   onEscape: () => void;
   onDash: () => void;
   onStart: () => void;
+  onPresagio: () => void;
 };
 
 const preventedKeys = new Set([
@@ -66,6 +67,11 @@ export function createKeyboardInput(
     if (key === "v") {
       event.preventDefault();
       callbacks.onDash();
+    }
+
+    if (key === "c") {
+      event.preventDefault();
+      callbacks.onPresagio();
     }
 
     if (isStartKey(key)) {
