@@ -13,6 +13,12 @@ import {
 import { applyDestello } from "./powers/destello.ts";
 import { createLetargoState, updateLetargo } from "./powers/letargo.ts";
 import { parsePowersConfig } from "./powers/index.ts";
+import {
+  createGameSession,
+  dashGameSession,
+  resetGameSession,
+  updateGameSession,
+} from "./session.ts";
 
 const levelFile = parseLevelFile(
   JSON.parse(readFileSync("public/levels.json", "utf8")),
@@ -120,4 +126,31 @@ letargoStep = updateLetargo(
 assert.equal(letargoStep.state.energy, powers.letargo.maxEnergy);
 assert.equal(letargoStep.state.cooldownRemaining, 0);
 
-console.log("selfcheck passed");
+const session = createGameSession({
+  level: DEFAULT_LEVEL,
+  powers,
+  state: "ready",
+});
+
+assert.equal(session.state, "ready");
+assert.equal(session.elapsed, 0);
+assert.equal(session.bullets.length, 0);
+
+resetGameSession(session, "running");
+assert.equal(session.state, "running");
+assert.equal(session.elapsed, 0);
+
+const beforeDashX = session.player.pos.x;
+dashGameSession(session, { x: 1, y: 0 });
+assert.equal(session.player.pos.x, beforeDashX + powers.destello.distance);
+
+const updateResult = updateGameSession(session, {
+  rawDt: 1,
+  direction: { x: 0, y: 0 },
+  slowHeld: false,
+});
+
+assert.equal(updateResult.died, false);
+assert.equal(session.elapsed, 1);
+
+console.log(":) selfcheck passed!");

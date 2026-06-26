@@ -3,18 +3,11 @@ import { getDom } from "./dom.ts";
 
 import {
   DEFAULT_LEVEL,
-  type Bullet,
   type GameState,
   type LevelConfig,
-  type Player,
-  type Shooter,
   type Vec2,
-  circlesTouch,
   createPlayer,
   createShooters,
-  moveBullet,
-  movePlayer,
-  spawnBullet,
 } from "./core.ts";
 import {
   applyPageMode,
@@ -26,16 +19,15 @@ import {
 import { loadBestTime, saveBestTime } from "./storage.ts";
 import { cloneLevel, numberValue } from "./utils.ts";
 import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
-// P O D E R E S
-import { type PowersConfig } from "./powers/index.ts";
+// S E S S I O N
 import {
-  createLetargoState,
-  type LetargoTrailPoint,
-  type LetargoState,
-  updateLetargo,
-  updateLetargoTrail,
-} from "./powers/letargo.ts";
-import { applyDestello } from "./powers/destello.ts";
+  createGameSession,
+  dashGameSession,
+  resetGameSession,
+  setSessionLevel,
+  updateGameSession,
+  type GameSession,
+} from "./session.ts";
 // R E N D E R I Z A D O  C A N V A S
 import { renderGame, resizeGameCanvas } from "./renderer.ts";
 // S E T T I N G S
@@ -88,28 +80,26 @@ const mode = getPageMode();
 applyPageMode(mode);
 
 let baseLevel: LevelConfig = DEFAULT_LEVEL;
-let level: LevelConfig = DEFAULT_LEVEL;
-let powers!: PowersConfig;
-let state: GameState = "ready";
-let player: Player = createPlayer(level);
-let shooters: Shooter[] = createShooters(level);
-let bullets: Bullet[] = [];
-let letargo!: LetargoState;
-let elapsed = 0;
+let session: GameSession | null = null;
 let bestTime = loadBestTime();
 let lastTime = performance.now();
 let loadError = "";
 let settingsOpen = false;
-let lastDirection: Vec2 = { x: 0, y: -1 };
-let playerTrail: LetargoTrailPoint[] = [];
-let playerTrailClock = 0;
+
+function currentLevel(): LevelConfig {
+  return session?.level ?? baseLevel;
+}
+
+function currentState(): GameState {
+  return session?.state ?? "ready";
+}
 
 // WRAPERS
 
 function syncTouchControls(): void {
   syncTouchControlsUi({
     mode,
-    state,
+    state: currentState(),
     settingsOpen,
     keyboardPreferred: keyboardInput.isKeyboardPreferred(),
     touchFirstControlsSupported: supportsTouchFirstControls(),
@@ -124,17 +114,21 @@ function syncMobileHud(): void {
     mobileTime,
     mobileBest,
     mobileBullets,
-    elapsed,
+    elapsed: session?.elapsed ?? 0,
     bestTime,
-    bulletCount: bullets.length,
+    bulletCount: session?.bullets.length ?? 0,
   });
 }
 
 function syncSlowPowerUi(): void {
+  if (!session) {
+    return;
+  }
+
   syncLetargoPowerUi({
     slowPower,
-    letargo,
-    config: powers.letargo,
+    letargo: session.letargo,
+    config: session.powers.letargo,
   });
 }
 
@@ -143,7 +137,7 @@ function syncSettingsVisibility(): void {
     settingsToggle,
     loadError,
     settingsOpen,
-    state,
+    state: currentState(),
   });
 }
 
@@ -153,7 +147,7 @@ function syncStartScreen(): void {
     powersBar,
     loadError,
     settingsOpen,
-    state,
+    state: currentState(),
   });
 }
 
@@ -162,23 +156,26 @@ function resizeCanvas(): void {
     canvas: gameCanvas,
     ctx,
     shell: gameShell,
-    level,
+    level: currentLevel(),
     mode,
   });
 }
 
 function render(): void {
+  const level = currentLevel();
+
   renderGame({
     ctx,
     level,
     mode,
-    state,
-    player,
-    shooters,
-    bullets,
-    playerTrail,
-    trailLifetime: loadError ? 1 : powers.letargo.visual.trailLifetime,
-    elapsed,
+    state: session?.state ?? "ready",
+    player: session?.player ?? createPlayer(level),
+    shooters: session?.shooters ?? createShooters(level),
+    bullets: session?.bullets ?? [],
+    playerTrail: session?.playerTrail ?? [],
+    trailLifetime:
+      loadError || !session ? 1 : session.powers.letargo.visual.trailLifetime,
+    elapsed: session?.elapsed ?? 0,
     bestTime,
     loadError,
   });
@@ -187,17 +184,19 @@ function render(): void {
 // F U N C I O N A L E S
 
 function openSettings(): void {
-  if (loadError || state === "running") {
+  if (loadError || currentState() === "running") {
     return;
   }
 
   settingsOpen = true;
   settingsError.textContent = "";
+
   populateSettingsForm({
-    source: level,
+    source: currentLevel(),
     inputs,
     shootersList,
   });
+
   settingsPanel.hidden = false;
   settingsToggle.hidden = true;
   syncStartScreen();
@@ -215,29 +214,23 @@ function closeSettings(): void {
 }
 
 function applyLevel(nextLevel: LevelConfig): void {
-  level = cloneLevel(nextLevel);
-  reset("ready");
+  if (!session) {
+    return;
+  }
+
+  setSessionLevel(session, nextLevel, "ready");
   resizeCanvas();
   render();
 }
 
-function reset(nextState: GameState = "running"): void {
-  state = nextState;
-  player = createPlayer(level);
-  shooters = createShooters(level);
-  bullets = [];
-  letargo = createLetargoState(powers.letargo);
-  playerTrail = [];
-  playerTrailClock = 0;
-  elapsed = 0;
-}
-
 function startOrRestart(): void {
-  if (!loadError && !settingsOpen && state !== "running") {
-    reset("running");
-    syncStartScreen();
-    syncTouchControls();
+  if (!session || loadError || settingsOpen || session.state === "running") {
+    return;
   }
+
+  resetGameSession(session, "running");
+  syncStartScreen();
+  syncTouchControls();
 }
 
 function inputDirection(): Vec2 {
@@ -248,75 +241,27 @@ function inputDirection(): Vec2 {
     : touchInput.direction();
 }
 
-function activeDashDirection(): Vec2 {
-  const direction = inputDirection();
-  if (direction.x !== 0 || direction.y !== 0) {
-    lastDirection = direction;
-    return direction;
-  }
-  return lastDirection;
-}
-
 function dashPlayer(): void {
-  if (state !== "running") {
+  if (!session) {
     return;
   }
 
-  player = applyDestello(player, activeDashDirection(), level, powers.destello);
-}
-
-function updatePlayerTrail(rawDt: number): void {
-  const nextTrail = updateLetargoTrail({
-    trail: playerTrail,
-    clock: playerTrailClock,
-    player,
-    rawDt,
-    active: letargo.active,
-    config: powers.letargo,
-  });
-
-  playerTrail = nextTrail.trail;
-  playerTrailClock = nextTrail.clock;
+  dashGameSession(session, inputDirection());
 }
 
 function update(rawDt: number): void {
-  if (state !== "running") {
+  if (!session) {
     return;
   }
 
-  const slowStep = updateLetargo(
-    letargo,
-    keyboardInput.isPressed("control") || touchInput.isSlowHeld(),
+  const result = updateGameSession(session, {
     rawDt,
-    powers.letargo,
-  );
-  letargo = slowStep.state;
-  const dt = slowStep.simulationDt;
+    direction: inputDirection(),
+    slowHeld: keyboardInput.isPressed("control") || touchInput.isSlowHeld(),
+  });
 
-  elapsed += dt;
-
-  const direction = inputDirection();
-  player = movePlayer(player, direction, dt, level);
-  if (direction.x !== 0 || direction.y !== 0) {
-    lastDirection = direction;
-  }
-  updatePlayerTrail(rawDt);
-
-  for (const shooter of shooters) {
-    shooter.elapsed += dt;
-    while (shooter.elapsed >= shooter.cooldown) {
-      shooter.elapsed -= shooter.cooldown;
-      if (bullets.length < level.bullets.max) {
-        bullets.push(spawnBullet(shooter, player.pos, level));
-      }
-    }
-  }
-
-  bullets = bullets.map((bullet) => moveBullet(bullet, dt, level));
-
-  if (bullets.some((bullet) => circlesTouch(player, bullet))) {
-    bestTime = saveBestTime(bestTime, elapsed);
-    state = "dead";
+  if (result.died) {
+    bestTime = saveBestTime(bestTime, session.elapsed);
     syncTouchControls();
   }
 }
@@ -410,6 +355,8 @@ settingsClose.addEventListener("click", closeSettings);
 cancelSettingsButton.addEventListener("click", closeSettings);
 
 addShooterButton.addEventListener("click", () => {
+  const level = currentLevel();
+
   shootersList.insertAdjacentHTML(
     "beforeend",
     shooterRowHtml({
@@ -419,6 +366,7 @@ addShooterButton.addEventListener("click", () => {
       cooldown: 0.9,
     }),
   );
+
   settingsError.textContent = "";
 });
 
@@ -442,11 +390,13 @@ shootersList.addEventListener("click", (event: any) => {
 
 resetSettingsButton.addEventListener("click", () => {
   applyLevel(baseLevel);
+
   populateSettingsForm({
-    source: level,
+    source: currentLevel(),
     inputs,
     shootersList,
   });
+
   settingsError.textContent = "";
 });
 
@@ -456,17 +406,18 @@ settingsPanel.addEventListener("keydown", (event: any) => {
   }
 });
 
-settingsPanel.addEventListener("submit", (event: any) => {
+settingsPanel.addEventListener("submit", (event) => {
   event.preventDefault();
 
   try {
     applyLevel(
       readLevelFromSettingsForm({
-        currentLevel: level,
+        currentLevel: currentLevel(),
         inputs,
         shootersList,
       }),
     );
+
     closeSettings();
   } catch (error) {
     settingsError.textContent =
@@ -479,10 +430,14 @@ window.addEventListener("resize", syncTouchControls);
 
 async function init(): Promise<void> {
   try {
-    powers = await loadPowersConfig();
+    const powers = await loadPowersConfig();
+
     baseLevel = cloneLevel(await loadFirstLevel());
-    level = cloneLevel(baseLevel);
-    reset("ready");
+    session = createGameSession({
+      level: baseLevel,
+      powers,
+      state: "ready",
+    });
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Unknown error";
 
