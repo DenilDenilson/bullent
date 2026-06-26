@@ -1,4 +1,7 @@
+// @ts-ignore: CSS module declaration not available in this TS config
 import "./style.css";
+import { requireValue, getDom } from "./dom.ts"
+
 import {
   DEFAULT_LEVEL,
   DEFAULT_POWERS,
@@ -21,58 +24,43 @@ import {
   spawnBullet,
   updateSlowMotion,
 } from "./core.ts";
+import { applyPageMode, getPageMode } from "./mode.ts";
+import { loadBestTime, saveBestTime } from "./storage.ts";
+import { cloneLevel, formatTime, numberValue } from "./utils.ts";
+import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
 
-const canvas = document.querySelector<HTMLCanvasElement>("#game");
-function requireValue<T>(value: T | null, message: string): T {
-  if (!value) {
-    throw new Error(message);
-  }
-  return value;
-}
+const {
+  gameCanvas,
+  ctx,
+  gameShell,
+  mobileHud,
+  mobileTime,
+  mobileBest,
+  mobileBullets,
+  powersBar,
+  slowPower,
+  startScreen,
+  startCta,
+  touchControls,
+  touchJoystickZone,
+  touchJoystickBase,
+  touchJoystickThumb,
+  touchPowerZone,
+  settingsToggle,
+  settingsPanel,
+  settingsClose,
+  addShooterButton,
+  resetSettingsButton,
+  cancelSettingsButton,
+  shootersList,
+  settingsError,
+  inputs,
+} = getDom();
 
-const gameCanvas = requireValue(canvas, "Missing #game canvas");
-const ctx = requireValue(gameCanvas.getContext("2d"), "Canvas 2D is not supported");
-const gameShell = requireValue(document.querySelector<HTMLElement>("#game-shell"), "Missing #game-shell");
-const mobileHud = requireValue(document.querySelector<HTMLElement>("#mobile-hud"), "Missing #mobile-hud");
-const mobileTime = requireValue(document.querySelector<HTMLElement>("#mobile-time"), "Missing #mobile-time");
-const mobileBest = requireValue(document.querySelector<HTMLElement>("#mobile-best"), "Missing #mobile-best");
-const mobileBullets = requireValue(document.querySelector<HTMLElement>("#mobile-bullets"), "Missing #mobile-bullets");
-const powersBar = requireValue(document.querySelector<HTMLElement>("#powers-bar"), "Missing #powers-bar");
-const slowPower = requireValue(document.querySelector<HTMLElement>("#power-slow"), "Missing #power-slow");
-const startScreen = requireValue(document.querySelector<HTMLElement>("#start-screen"), "Missing #start-screen");
-const startCta = requireValue(document.querySelector<HTMLButtonElement>("#start-cta"), "Missing #start-cta");
-const touchControls = requireValue(document.querySelector<HTMLElement>("#touch-controls"), "Missing #touch-controls");
-const touchJoystickZone = requireValue(document.querySelector<HTMLElement>("#touch-joystick-zone"), "Missing #touch-joystick-zone");
-const touchJoystickBase = requireValue(document.querySelector<HTMLElement>("#touch-joystick-base"), "Missing #touch-joystick-base");
-const touchJoystickThumb = requireValue(document.querySelector<HTMLElement>("#touch-joystick-thumb"), "Missing #touch-joystick-thumb");
-const touchPowerZone = requireValue(document.querySelector<HTMLElement>("#touch-power-zone"), "Missing #touch-power-zone");
-const settingsToggle = requireValue(document.querySelector<HTMLButtonElement>("#settings-toggle"), "Missing #settings-toggle");
-const settingsPanel = requireValue(document.querySelector<HTMLFormElement>("#settings-panel"), "Missing #settings-panel");
-const settingsClose = requireValue(document.querySelector<HTMLButtonElement>("#settings-close"), "Missing #settings-close");
-const addShooterButton = requireValue(document.querySelector<HTMLButtonElement>("#add-shooter"), "Missing #add-shooter");
-const resetSettingsButton = requireValue(document.querySelector<HTMLButtonElement>("#reset-settings"), "Missing #reset-settings");
-const cancelSettingsButton = requireValue(document.querySelector<HTMLButtonElement>("#cancel-settings"), "Missing #cancel-settings");
-const shootersList = requireValue(document.querySelector<HTMLElement>("#shooters-list"), "Missing #shooters-list");
-const settingsError = requireValue(document.querySelector<HTMLElement>("#settings-error"), "Missing #settings-error");
-
-type PageMode = "standalone" | "embed" | "mobile";
-const params = new URLSearchParams(window.location.search);
-const mode: PageMode = params.get("embed") === "1" ? "embed" : params.get("mobile") === "1" ? "mobile" : "standalone";
-document.body.classList.add(`mode-${mode}`);
-
-const inputs = {
-  name: requireValue(document.querySelector<HTMLInputElement>("#level-name"), "Missing #level-name"),
-  arenaWidth: requireValue(document.querySelector<HTMLInputElement>("#arena-width"), "Missing #arena-width"),
-  arenaHeight: requireValue(document.querySelector<HTMLInputElement>("#arena-height"), "Missing #arena-height"),
-  playerRadius: requireValue(document.querySelector<HTMLInputElement>("#player-radius"), "Missing #player-radius"),
-  playerSpeed: requireValue(document.querySelector<HTMLInputElement>("#player-speed"), "Missing #player-speed"),
-  bulletRadius: requireValue(document.querySelector<HTMLInputElement>("#bullet-radius"), "Missing #bullet-radius"),
-  bulletSpeed: requireValue(document.querySelector<HTMLInputElement>("#bullet-speed"), "Missing #bullet-speed"),
-  bulletMax: requireValue(document.querySelector<HTMLInputElement>("#bullet-max"), "Missing #bullet-max"),
-};
+const mode = getPageMode()
+applyPageMode(mode)
 
 const keys = new Set<string>();
-const bestTimeKey = "bullent.bestTime";
 const dashDistance = 72;
 const playerTrailInterval = 0.035;
 const playerTrailLifetime = 0.45;
@@ -112,18 +100,6 @@ let touchPowerStartedAt = 0;
 let lastPowerTapAt = 0;
 let touchHoldTimer = 0;
 
-function cloneLevel(source: LevelConfig): LevelConfig {
-  return structuredClone(source);
-}
-
-function numberValue(input: HTMLInputElement): number {
-  return Number(input.value);
-}
-
-function formatTime(seconds: number): string {
-  return `${seconds.toFixed(1)}s`;
-}
-
 function supportsTouchFirstControls(): boolean {
   return (
     window.matchMedia("(pointer: coarse)").matches &&
@@ -154,23 +130,7 @@ function syncMobileHud(): void {
   mobileBullets.textContent = String(bullets.length);
 }
 
-function loadBestTime(): number {
-  try {
-    const value = Number(localStorage.getItem(bestTimeKey) ?? 0);
-    return Number.isFinite(value) && value > 0 ? value : 0;
-  } catch {
-    return 0;
-  }
-}
 
-function saveBestTime(value: number): void {
-  bestTime = Math.max(bestTime, value);
-  try {
-    localStorage.setItem(bestTimeKey, String(bestTime));
-  } catch {
-    // Local storage is optional; the in-memory record still works for this session.
-  }
-}
 
 function syncSlowPowerUi(): void {
   const config = powers.slowMotion;
@@ -399,7 +359,7 @@ function update(rawDt: number): void {
   bullets = bullets.map((bullet) => moveBullet(bullet, dt, level));
 
   if (bullets.some((bullet) => circlesTouch(player, bullet))) {
-    saveBestTime(elapsed);
+    bestTime = saveBestTime(bestTime, elapsed);
     state = "dead";
     syncTouchControls();
   }
@@ -594,7 +554,7 @@ function resetJoystick(): void {
   touchJoystickThumb.style.transform = "translate(0, 0)";
 }
 
-touchJoystickZone.addEventListener("pointerdown", (event) => {
+touchJoystickZone.addEventListener("pointerdown", (event: any) => {
   if (settingsOpen || touchJoystickPointerId !== null) {
     return;
   }
@@ -607,20 +567,20 @@ touchJoystickZone.addEventListener("pointerdown", (event) => {
   setJoystickFromPointer(event);
 });
 
-touchJoystickZone.addEventListener("pointermove", (event) => {
+touchJoystickZone.addEventListener("pointermove", (event: any) => {
   if (event.pointerId === touchJoystickPointerId) {
     event.preventDefault();
     setJoystickFromPointer(event);
   }
 });
 
-touchJoystickZone.addEventListener("pointerup", (event) => {
+touchJoystickZone.addEventListener("pointerup", (event: any) => {
   if (event.pointerId === touchJoystickPointerId) {
     resetJoystick();
   }
 });
 
-touchJoystickZone.addEventListener("pointercancel", (event) => {
+touchJoystickZone.addEventListener("pointercancel", (event: any) => {
   if (event.pointerId === touchJoystickPointerId) {
     resetJoystick();
   }
@@ -633,7 +593,7 @@ function clearTouchPowerHold(): void {
   touchPowerZone.classList.remove("is-holding");
 }
 
-touchPowerZone.addEventListener("pointerdown", (event) => {
+touchPowerZone.addEventListener("pointerdown", (event: any) => {
   if (settingsOpen || touchPowerPointerId !== null) {
     return;
   }
@@ -650,7 +610,7 @@ touchPowerZone.addEventListener("pointerdown", (event) => {
   }, holdDelay);
 });
 
-touchPowerZone.addEventListener("pointerup", (event) => {
+touchPowerZone.addEventListener("pointerup", (event: any) => {
   if (event.pointerId !== touchPowerPointerId) {
     return;
   }
@@ -674,7 +634,7 @@ touchPowerZone.addEventListener("pointerup", (event) => {
   }
 });
 
-touchPowerZone.addEventListener("pointercancel", (event) => {
+touchPowerZone.addEventListener("pointercancel", (event: any) => {
   if (event.pointerId === touchPowerPointerId) {
     touchPowerPointerId = null;
     touchPowerZone.classList.remove("is-pressed");
@@ -694,7 +654,7 @@ gameCanvas.addEventListener("pointerdown", () => {
   startOrRestart();
 });
 
-startCta.addEventListener("click", (event) => {
+startCta.addEventListener("click", (event: any) => {
   event.stopPropagation();
   if (shouldRedirectStandaloneToMobile()) {
     goToMobileMode();
@@ -720,7 +680,7 @@ addShooterButton.addEventListener("click", () => {
   settingsError.textContent = "";
 });
 
-shootersList.addEventListener("click", (event) => {
+shootersList.addEventListener("click", (event: any) => {
   const button = (event.target as HTMLElement).closest<HTMLButtonElement>(".remove-shooter");
   if (!button) {
     return;
@@ -742,13 +702,13 @@ resetSettingsButton.addEventListener("click", () => {
   settingsError.textContent = "";
 });
 
-settingsPanel.addEventListener("keydown", (event) => {
+settingsPanel.addEventListener("keydown", (event: any) => {
   if (event.key === "Enter") {
     event.preventDefault();
   }
 });
 
-settingsPanel.addEventListener("submit", (event) => {
+settingsPanel.addEventListener("submit", (event: any) => {
   event.preventDefault();
 
   try {
@@ -762,31 +722,6 @@ settingsPanel.addEventListener("submit", (event) => {
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("resize", syncTouchControls);
 
-async function loadFirstLevel(): Promise<LevelConfig> {
-  const response = await fetch("/levels.json");
-  if (!response.ok) {
-    throw new Error(`HTTP ${response.status}`);
-  }
-
-  const levels = parseLevelFile(await response.json()).levels;
-  const first = levels[0];
-  if (!first) {
-    throw new Error("No levels found");
-  }
-  return first;
-}
-
-async function loadPowersConfig(): Promise<PowersConfig> {
-  try {
-    const response = await fetch("/powers.json");
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return parsePowersConfig(await response.json());
-  } catch {
-    return DEFAULT_POWERS;
-  }
-}
 
 async function init(): Promise<void> {
   try {
