@@ -1,5 +1,5 @@
 import "./style.css";
-import { requireValue, getDom } from "./dom.ts"
+import { getDom } from "./dom.ts"
 
 import {
   DEFAULT_LEVEL,
@@ -14,7 +14,6 @@ import {
   createShooters,
   moveBullet,
   movePlayer,
-  parseLevelFile,
   spawnBullet,
 } from "./core.ts";
 import { applyPageMode, getPageMode, goToMobileMode, shouldRedirectStandaloneToMobile, supportsTouchFirstControls } from "./mode.ts";
@@ -27,6 +26,12 @@ import { createLetargoState, type LetargoTrailPoint, type LetargoState, updateLe
 import { applyDestello } from "./powers/destello.ts";
 // R E N D E R I Z A D O  C A N V A S
 import { renderGame, resizeGameCanvas } from "./renderer.ts";
+// S E T T I N G S
+import {
+  populateSettingsForm,
+  readLevelFromSettingsForm,
+  shooterRowHtml,
+} from "./settings.ts";
 
 const {
   gameCanvas,
@@ -129,71 +134,71 @@ function syncSlowPowerUi(): void {
       : `Letargo: Ctrl (${formatTime(letargo.energy)})`;
 }
 
-function validatedLevelFromForm(): LevelConfig {
-  const shooters = [...shootersList.querySelectorAll<HTMLElement>(".shooter-row")].map((row) => ({
-    x: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-x"), "Missing shooter x")),
-    y: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-y"), "Missing shooter y")),
-    cooldown: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-cooldown"), "Missing shooter cooldown")),
-  }));
+// function validatedLevelFromForm(): LevelConfig {
+//   const shooters = [...shootersList.querySelectorAll<HTMLElement>(".shooter-row")].map((row) => ({
+//     x: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-x"), "Missing shooter x")),
+//     y: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-y"), "Missing shooter y")),
+//     cooldown: numberValue(requireValue(row.querySelector<HTMLInputElement>(".shooter-cooldown"), "Missing shooter cooldown")),
+//   }));
 
-  const parsed = parseLevelFile({
-    version: 1,
-    levels: [
-      {
-        id: level.id,
-        name: inputs.name.value,
-        arena: {
-          width: numberValue(inputs.arenaWidth),
-          height: numberValue(inputs.arenaHeight),
-        },
-        player: {
-          radius: numberValue(inputs.playerRadius),
-          speed: numberValue(inputs.playerSpeed),
-        },
-        bullets: {
-          radius: numberValue(inputs.bulletRadius),
-          speed: numberValue(inputs.bulletSpeed),
-          max: numberValue(inputs.bulletMax),
-        },
-        shooters,
-      },
-    ],
-  });
+//   const parsed = parseLevelFile({
+//     version: 1,
+//     levels: [
+//       {
+//         id: level.id,
+//         name: inputs.name.value,
+//         arena: {
+//           width: numberValue(inputs.arenaWidth),
+//           height: numberValue(inputs.arenaHeight),
+//         },
+//         player: {
+//           radius: numberValue(inputs.playerRadius),
+//           speed: numberValue(inputs.playerSpeed),
+//         },
+//         bullets: {
+//           radius: numberValue(inputs.bulletRadius),
+//           speed: numberValue(inputs.bulletSpeed),
+//           max: numberValue(inputs.bulletMax),
+//         },
+//         shooters,
+//       },
+//     ],
+//   });
 
-  return parsed.levels[0] ?? level;
-}
+//   return parsed.levels[0] ?? level;
+// }
 
-function shooterRowHtml(shooter: LevelConfig["shooters"][number]): string {
-  return `
-    <div class="shooter-row">
-      <label>
-        X
-        <input class="shooter-x" type="number" min="1" step="1" value="${shooter.x}" />
-      </label>
-      <label>
-        Y
-        <input class="shooter-y" type="number" min="1" step="1" value="${shooter.y}" />
-      </label>
-      <label>
-        Cooldown
-        <input class="shooter-cooldown" type="number" min="0.1" step="0.1" value="${shooter.cooldown}" />
-      </label>
-      <button class="remove-shooter" type="button">Remove</button>
-    </div>
-  `;
-}
+// function shooterRowHtml(shooter: LevelConfig["shooters"][number]): string {
+//   return `
+//     <div class="shooter-row">
+//       <label>
+//         X
+//         <input class="shooter-x" type="number" min="1" step="1" value="${shooter.x}" />
+//       </label>
+//       <label>
+//         Y
+//         <input class="shooter-y" type="number" min="1" step="1" value="${shooter.y}" />
+//       </label>
+//       <label>
+//         Cooldown
+//         <input class="shooter-cooldown" type="number" min="0.1" step="0.1" value="${shooter.cooldown}" />
+//       </label>
+//       <button class="remove-shooter" type="button">Remove</button>
+//     </div>
+//   `;
+// }
 
-function populateSettingsForm(source: LevelConfig): void {
-  inputs.name.value = source.name;
-  inputs.arenaWidth.value = String(source.arena.width);
-  inputs.arenaHeight.value = String(source.arena.height);
-  inputs.playerRadius.value = String(source.player.radius);
-  inputs.playerSpeed.value = String(source.player.speed);
-  inputs.bulletRadius.value = String(source.bullets.radius);
-  inputs.bulletSpeed.value = String(source.bullets.speed);
-  inputs.bulletMax.value = String(source.bullets.max);
-  shootersList.innerHTML = source.shooters.map(shooterRowHtml).join("");
-}
+// function populateSettingsForm(source: LevelConfig): void {
+//   inputs.name.value = source.name;
+//   inputs.arenaWidth.value = String(source.arena.width);
+//   inputs.arenaHeight.value = String(source.arena.height);
+//   inputs.playerRadius.value = String(source.player.radius);
+//   inputs.playerSpeed.value = String(source.player.speed);
+//   inputs.bulletRadius.value = String(source.bullets.radius);
+//   inputs.bulletSpeed.value = String(source.bullets.speed);
+//   inputs.bulletMax.value = String(source.bullets.max);
+//   shootersList.innerHTML = source.shooters.map(shooterRowHtml).join("");
+// }
 
 function openSettings(): void {
   if (loadError || state === "running") {
@@ -202,7 +207,11 @@ function openSettings(): void {
 
   settingsOpen = true;
   settingsError.textContent = "";
-  populateSettingsForm(level);
+  populateSettingsForm({
+    source: level,
+    inputs,
+    shootersList,
+  });
   settingsPanel.hidden = false;
   settingsToggle.hidden = true;
   syncStartScreen();
@@ -581,7 +590,11 @@ shootersList.addEventListener("click", (event: any) => {
 
 resetSettingsButton.addEventListener("click", () => {
   applyLevel(baseLevel);
-  populateSettingsForm(level);
+  populateSettingsForm({
+    source: level,
+    inputs,
+    shootersList,
+  });
   settingsError.textContent = "";
 });
 
@@ -595,7 +608,13 @@ settingsPanel.addEventListener("submit", (event: any) => {
   event.preventDefault();
 
   try {
-    applyLevel(validatedLevelFromForm());
+    applyLevel(
+    readLevelFromSettingsForm({
+      currentLevel: level,
+      inputs,
+      shootersList,
+    }),
+  );
     closeSettings();
   } catch (error) {
     settingsError.textContent = error instanceof Error ? error.message : "Invalid level.";
