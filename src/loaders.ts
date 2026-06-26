@@ -1,10 +1,8 @@
 import {
-  DEFAULT_POWERS,
   type LevelConfig,
-  type PowersConfig,
   parseLevelFile,
-  parsePowersConfig,
 } from "./core.ts";
+import { type PowersConfig, parsePowersConfig } from "./powers/index.ts";
 
 export async function loadFirstLevel(): Promise<LevelConfig> {
   const response = await fetch("/levels.json");
@@ -21,13 +19,9 @@ export async function loadFirstLevel(): Promise<LevelConfig> {
 }
 
 export async function loadPowersConfig(): Promise<PowersConfig> {
-  try {
-    const response = await fetch("/powers.json");
-    if (!response.ok) {
-      throw new Error(`HTTP ${response.status}`);
-    }
-    return parsePowersConfig(await response.json());
-  } catch {
-    return DEFAULT_POWERS;
+  const response = await fetch("/powers.json");
+  if (!response.ok) {
+    throw new Error(`HTTP ${response.status}`);
   }
+  return parsePowersConfig(await response.json());
 }

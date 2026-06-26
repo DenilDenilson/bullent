@@ -4,30 +4,28 @@ import { requireValue, getDom } from "./dom.ts"
 
 import {
   DEFAULT_LEVEL,
-  DEFAULT_POWERS,
   type Bullet,
   type GameState,
   type LevelConfig,
-  type PowersConfig,
   type Player,
   type Shooter,
-  type SlowMotionState,
   type Vec2,
   circlesTouch,
   createPlayer,
   createShooters,
-  createSlowMotionState,
   moveBullet,
   movePlayer,
   parseLevelFile,
-  parsePowersConfig,
   spawnBullet,
-  updateSlowMotion,
 } from "./core.ts";
-import { applyPageMode, getPageMode } from "./mode.ts";
+import { applyPageMode, getPageMode, goToMobileMode, shouldRedirectStandaloneToMobile, supportsTouchFirstControls } from "./mode.ts";
 import { loadBestTime, saveBestTime } from "./storage.ts";
 import { cloneLevel, formatTime, numberValue } from "./utils.ts";
 import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
+// P O D E R E S
+import { type PowersConfig } from "./powers/index.ts";
+import { createLetargoState, type LetargoTrailPoint, type LetargoState, updateLetargo, updateLetargoTrail } from "./powers/letargo.ts";
+import { applyDestello } from "./powers/destello.ts";
 
 const {
   gameCanvas,
@@ -61,35 +59,26 @@ const mode = getPageMode()
 applyPageMode(mode)
 
 const keys = new Set<string>();
-const dashDistance = 72;
-const playerTrailInterval = 0.035;
-const playerTrailLifetime = 0.45;
 const joystickRadius = 42;
 const joystickDeadZone = 8;
 const doubleTapWindow = 320;
 const holdDelay = 180;
 
-type TrailPoint = {
-  pos: Vec2;
-  radius: number;
-  age: number;
-};
-
 let baseLevel: LevelConfig = DEFAULT_LEVEL;
 let level: LevelConfig = DEFAULT_LEVEL;
-let powers: PowersConfig = DEFAULT_POWERS;
+let powers!: PowersConfig;
 let state: GameState = "ready";
 let player: Player = createPlayer(level);
 let shooters: Shooter[] = createShooters(level);
 let bullets: Bullet[] = [];
-let slowMotion: SlowMotionState = createSlowMotionState(powers.slowMotion);
+let letargo!: LetargoState;
 let elapsed = 0;
 let bestTime = loadBestTime();
 let lastTime = performance.now();
 let loadError = "";
 let settingsOpen = false;
 let lastDirection: Vec2 = { x: 0, y: -1 };
-let playerTrail: TrailPoint[] = [];
+let playerTrail: LetargoTrailPoint[] = [];
 let playerTrailClock = 0;
 let touchDirection: Vec2 = { x: 0, y: 0 };
 let touchSlowHeld = false;
@@ -100,21 +89,7 @@ let touchPowerStartedAt = 0;
 let lastPowerTapAt = 0;
 let touchHoldTimer = 0;
 
-function supportsTouchFirstControls(): boolean {
-  return (
-    window.matchMedia("(pointer: coarse)").matches &&
-    !window.matchMedia("(any-pointer: fine)").matches &&
-    !window.matchMedia("(hover: hover)").matches
-  );
-}
 
-function shouldRedirectStandaloneToMobile(): boolean {
-  return mode === "standalone" && (supportsTouchFirstControls() || window.innerWidth <= 720);
-}
-
-function goToMobileMode(): void {
-  window.location.href = `${window.location.pathname}?mobile=1`;
-}
 
 function syncTouchControls(): void {
   const touchAllowed = mode === "mobile" || (supportsTouchFirstControls() && !keyboardPreferred);
@@ -130,20 +105,18 @@ function syncMobileHud(): void {
   mobileBullets.textContent = String(bullets.length);
 }
 
-
-
 function syncSlowPowerUi(): void {
-  const config = powers.slowMotion;
+  const config = powers.letargo;
   const cover =
-    slowMotion.cooldownRemaining > 0
-      ? slowMotion.cooldownRemaining / config.cooldown
-      : 1 - slowMotion.energy / config.maxEnergy;
+    letargo.cooldownRemaining > 0
+      ? letargo.cooldownRemaining / config.cooldown
+      : 1 - letargo.energy / config.maxEnergy;
   const stateName =
-    slowMotion.cooldownRemaining > 0
+    letargo.cooldownRemaining > 0
       ? "cooldown"
-      : slowMotion.active
+      : letargo.active
         ? "active"
-        : slowMotion.energy >= config.maxEnergy
+        : letargo.energy >= config.maxEnergy
           ? "ready"
           : "recharging";
 
@@ -151,8 +124,8 @@ function syncSlowPowerUi(): void {
   slowPower.style.setProperty("--slow-cover", `${Math.max(0, Math.min(1, cover)) * 360}deg`);
   slowPower.title =
     stateName === "cooldown"
-      ? `Camara lenta: recargando ${formatTime(slowMotion.cooldownRemaining)}`
-      : `Camara lenta: Ctrl (${formatTime(slowMotion.energy)})`;
+      ? `Letargo: recargando ${formatTime(letargo.cooldownRemaining)}`
+      : `Letargo: Ctrl (${formatTime(letargo.energy)})`;
 }
 
 function validatedLevelFromForm(): LevelConfig {
@@ -268,7 +241,7 @@ function reset(nextState: GameState = "running"): void {
   player = createPlayer(level);
   shooters = createShooters(level);
   bullets = [];
-  slowMotion = createSlowMotionState(powers.slowMotion);
+  letargo = createLetargoState(powers.letargo);
   playerTrail = [];
   playerTrailClock = 0;
   elapsed = 0;
@@ -304,28 +277,22 @@ function dashPlayer(): void {
     return;
   }
 
-  player = movePlayer(player, activeDashDirection(), dashDistance / player.speed, level);
+  player = applyDestello(player, activeDashDirection(), level, powers.destello)
 }
 
 function updatePlayerTrail(rawDt: number): void {
-  playerTrail = playerTrail
-    .map((point) => ({ ...point, age: point.age + rawDt }))
-    .filter((point) => point.age < playerTrailLifetime);
+  const nextTrail = updateLetargoTrail({
+    trail: playerTrail,
+    clock: playerTrailClock,
+    player,
+    rawDt,
+    active: letargo.active,
+    config: powers.letargo
+  })
 
-  if (!slowMotion.active) {
-    playerTrailClock = 0;
-    return;
-  }
+  playerTrail = nextTrail.trail;
+  playerTrailClock = nextTrail.clock
 
-  playerTrailClock += rawDt;
-  if (playerTrailClock >= playerTrailInterval) {
-    playerTrailClock = 0;
-    playerTrail.push({
-      pos: { ...player.pos },
-      radius: player.radius,
-      age: 0,
-    });
-  }
 }
 
 function update(rawDt: number): void {
@@ -333,8 +300,8 @@ function update(rawDt: number): void {
     return;
   }
 
-  const slowStep = updateSlowMotion(slowMotion, keys.has("control") || touchSlowHeld, rawDt, powers.slowMotion);
-  slowMotion = slowStep.state;
+  const slowStep = updateLetargo(letargo, keys.has("control") || touchSlowHeld, rawDt, powers.letargo);
+  letargo = slowStep.state;
   const dt = slowStep.simulationDt;
 
   elapsed += dt;
@@ -399,7 +366,7 @@ function drawCircle(pos: Vec2, radius: number, fill: string, shadow = "transpare
 
 function drawPlayerTrail(): void {
   for (const point of playerTrail) {
-    const progress = point.age / playerTrailLifetime;
+    const progress = point.age / powers.letargo.visual.trailLifetime;
     const alpha = Math.max(0, 1 - progress) * 0.34;
 
     ctx.save();
@@ -646,7 +613,7 @@ gameCanvas.addEventListener("pointerdown", () => {
   if (settingsOpen) {
     return;
   }
-  if (shouldRedirectStandaloneToMobile()) {
+  if (shouldRedirectStandaloneToMobile(mode)) {
     goToMobileMode();
     return;
   }
@@ -656,7 +623,7 @@ gameCanvas.addEventListener("pointerdown", () => {
 
 startCta.addEventListener("click", (event: any) => {
   event.stopPropagation();
-  if (shouldRedirectStandaloneToMobile()) {
+  if (shouldRedirectStandaloneToMobile(mode)) {
     goToMobileMode();
     return;
   }
@@ -731,6 +698,14 @@ async function init(): Promise<void> {
     reset("ready");
   } catch (error) {
     loadError = error instanceof Error ? error.message : "Unknown error";
+
+    resizeCanvas()
+    render()
+    syncSettingsVisibility()
+    syncStartScreen()
+    syncMobileHud()
+
+    return;
   }
 
   resizeCanvas();

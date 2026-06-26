@@ -2,33 +2,35 @@ import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
 import {
   DEFAULT_LEVEL,
-  DEFAULT_POWERS,
   circlesTouch,
-  createSlowMotionState,
   createPlayer,
   createShooters,
   moveBullet,
   movePlayer,
   parseLevelFile,
-  parsePowersConfig,
   spawnBullet,
-  updateSlowMotion,
 } from "./core.ts";
+import { applyDestello } from "./powers/destello.ts";
+import { createLetargoState, updateLetargo } from "./powers/letargo.ts";
+import { parsePowersConfig } from "./powers/index.ts";
 
 const levelFile = parseLevelFile(JSON.parse(readFileSync("public/levels.json", "utf8")));
 assert.equal(levelFile.version, 1);
 assert.equal(levelFile.levels.length, 1);
 
 const powers = parsePowersConfig(JSON.parse(readFileSync("public/powers.json", "utf8")));
-assert.equal(powers.slowMotion.maxEnergy, DEFAULT_POWERS.slowMotion.maxEnergy);
+assert.equal(powers.destello.distance, 72);
+assert.equal(powers.letargo.maxEnergy, 3);
+assert.equal(powers.letargo.visual.trailLifetime, 0.45);
 
 const player = createPlayer();
+
 const moved = movePlayer(player, { x: -1, y: -1 }, 10);
 assert.equal(moved.pos.x, DEFAULT_LEVEL.player.radius);
 assert.equal(moved.pos.y, DEFAULT_LEVEL.player.radius);
 
-const dashed = movePlayer(player, { x: 1, y: 0 }, 72 / player.speed);
-assert.equal(dashed.pos.x, player.pos.x + 72);
+const dashed = applyDestello(player, { x: 1, y: 0 }, DEFAULT_LEVEL, powers.destello);
+assert.equal(dashed.pos.x, player.pos.x + powers.destello.distance);
 assert.equal(dashed.pos.y, player.pos.y);
 
 const bounced = moveBullet(
@@ -49,6 +51,7 @@ assert.equal(
   ),
   true,
 );
+
 assert.equal(
   circlesTouch(
     { pos: { x: 10, y: 10 }, radius: 10 },
@@ -59,25 +62,26 @@ assert.equal(
 
 const [shooter] = createShooters();
 assert.ok(shooter);
+
 const shot = spawnBullet(shooter, { x: DEFAULT_LEVEL.arena.width / 2, y: DEFAULT_LEVEL.arena.height / 2 });
 assert.ok(Math.abs(Math.hypot(shot.vel.x, shot.vel.y) - DEFAULT_LEVEL.bullets.speed) < 0.000001);
 assert.equal(shot.vel.x, 0);
 assert.ok(shot.vel.y > 0);
 
-let slow = updateSlowMotion(createSlowMotionState(), true, 1);
-assert.equal(slow.simulationDt, DEFAULT_POWERS.slowMotion.timeScale);
-assert.equal(slow.state.energy, 2);
+let letargoStep = updateLetargo(createLetargoState(powers.letargo), true, 1, powers.letargo);
+assert.equal(letargoStep.simulationDt, powers.letargo.timeScale);
+assert.equal(letargoStep.state.energy, powers.letargo.maxEnergy - 1);
 
-slow = updateSlowMotion(slow.state, false, 1);
-assert.equal(slow.simulationDt, 1);
-assert.equal(slow.state.energy, DEFAULT_POWERS.slowMotion.maxEnergy);
+letargoStep = updateLetargo(letargoStep.state, false, 1, powers.letargo);
+assert.equal(letargoStep.simulationDt, 1);
+assert.equal(letargoStep.state.energy, powers.letargo.maxEnergy);
 
-slow = updateSlowMotion(createSlowMotionState(), true, DEFAULT_POWERS.slowMotion.maxEnergy);
-assert.equal(slow.state.energy, 0);
-assert.equal(slow.state.cooldownRemaining, DEFAULT_POWERS.slowMotion.cooldown);
+letargoStep = updateLetargo(createLetargoState(powers.letargo), true, powers.letargo.maxEnergy, powers.letargo);
+assert.equal(letargoStep.state.energy, 0);
+assert.equal(letargoStep.state.cooldownRemaining, powers.letargo.cooldown);
 
-slow = updateSlowMotion(slow.state, false, DEFAULT_POWERS.slowMotion.cooldown);
-assert.equal(slow.state.energy, DEFAULT_POWERS.slowMotion.maxEnergy);
-assert.equal(slow.state.cooldownRemaining, 0);
+letargoStep = updateLetargo(letargoStep.state, false, powers.letargo.cooldown, powers.letargo);
+assert.equal(letargoStep.state.energy, powers.letargo.maxEnergy);
+assert.equal(letargoStep.state.cooldownRemaining, 0);
 
 console.log("selfcheck passed");

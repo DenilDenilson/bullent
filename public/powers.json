@@ -1,9 +1,16 @@
 {
   "version": 1,
-  "slowMotion": {
+  "destello": {
+    "distance": 72
+  },
+  "letargo": {
     "maxEnergy": 3,
     "cooldown": 5,
     "timeScale": 0.3,
-    "rechargeRate": 1
+    "rechargeRate": 1,
+    "visual": {
+      "trailInterval": 0.035,
+      "trailLifetime": 0.45
+    }
   }
 }

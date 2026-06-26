@@ -9,3 +9,19 @@ export function getPageMode(): PageMode {
 export function applyPageMode(mode: PageMode): void {
   document.body.classList.add(`mode-${mode}`);
 }
+
+export function supportsTouchFirstControls(): boolean {
+  return (
+    window.matchMedia("(pointer: coarse)").matches &&
+    !window.matchMedia("(any-pointer: fine)").matches &&
+    !window.matchMedia("(hover: hover)").matches
+  );
+}
+
+export function shouldRedirectStandaloneToMobile(mode: PageMode): boolean {
+  return mode === "standalone" && (supportsTouchFirstControls() || window.innerWidth <= 720);
+}
+
+export function goToMobileMode(): void {
+  window.location.href = `${window.location.pathname}?mobile=1`;
+}
