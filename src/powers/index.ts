@@ -1,3 +1,5 @@
+import { isRecord, requireNumber } from "../validation.ts";
+
 import type { DestelloConfig } from "./destello.ts";
 import type { LetargoConfig } from "./letargo.ts";
 
@@ -6,18 +8,6 @@ export type PowersConfig = {
   destello: DestelloConfig;
   letargo: LetargoConfig;
 };
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function requireNumber(value: unknown, path: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-    throw new Error(`${path} must be a positive number`);
-  }
-
-  return value;
-}
 
 export function parsePowersConfig(input: unknown): PowersConfig {
   if (!isRecord(input)) {

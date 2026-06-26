@@ -1,3 +1,5 @@
+import { isRecord, requireNumber, requireString } from "./validation.ts";
+
 export type Vec2 = {
   x: number;
   y: number;
@@ -155,24 +157,6 @@ export function moveBullet(bullet: Bullet, dt: number, level: LevelConfig = DEFA
 
 export function circlesTouch(a: { pos: Vec2; radius: number }, b: { pos: Vec2; radius: number }): boolean {
   return Math.hypot(a.pos.x - b.pos.x, a.pos.y - b.pos.y) <= a.radius + b.radius;
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-  return typeof value === "object" && value !== null;
-}
-
-function requireNumber(value: unknown, path: string): number {
-  if (typeof value !== "number" || !Number.isFinite(value) || value <= 0) {
-    throw new Error(`${path} must be a positive number`);
-  }
-  return value;
-}
-
-function requireString(value: unknown, path: string): string {
-  if (typeof value !== "string" || value.trim() === "") {
-    throw new Error(`${path} must be a non-empty string`);
-  }
-  return value;
 }
 
 export function parseLevelFile(input: unknown): LevelFile {
