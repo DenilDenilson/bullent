@@ -18,7 +18,7 @@ import {
 } from "./core.ts";
 import { applyPageMode, getPageMode, goToMobileMode, shouldRedirectStandaloneToMobile, supportsTouchFirstControls } from "./mode.ts";
 import { loadBestTime, saveBestTime } from "./storage.ts";
-import { cloneLevel, formatTime, numberValue } from "./utils.ts";
+import { cloneLevel, numberValue } from "./utils.ts";
 import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
 // P O D E R E S
 import { type PowersConfig } from "./powers/index.ts";
@@ -32,11 +32,17 @@ import {
   readLevelFromSettingsForm,
   shooterRowHtml,
 } from "./settings.ts";
-
 // C O N T R O L E S
 import { createKeyboardInput } from "./input/keyboard.ts";
 import { createTouchInput } from "./input/touch.ts";
-
+// UI
+import {
+  syncLetargoPowerUi,
+  syncMobileHud as syncMobileHudUi,
+  syncSettingsVisibility as syncSettingsVisibilityUi,
+  syncStartScreen as syncStartScreenUi,
+  syncTouchControls as syncTouchControlsUi,
+} from "./ui.ts";
 
 const {
   gameCanvas,
@@ -88,41 +94,54 @@ let playerTrailClock = 0;
 
 
 function syncTouchControls(): void {
-  const touchAllowed = mode === "mobile" || (supportsTouchFirstControls() && !keyboardInput.isKeyboardPreferred());
-  const enabled = mode !== "embed" && state === "running" && touchAllowed && !settingsOpen;
-
-  touchControls.hidden = !enabled;
-  document.body.classList.toggle("touch-controls", enabled);
+  syncTouchControlsUi({
+    mode,
+    state,
+    settingsOpen,
+    keyboardPreferred: keyboardInput.isKeyboardPreferred(),
+    touchFirstControlsSupported: supportsTouchFirstControls(),
+    touchControls,
+  });
 }
 
 function syncMobileHud(): void {
-  mobileHud.hidden = mode !== "mobile";
-  mobileTime.textContent = formatTime(elapsed);
-  mobileBest.textContent = formatTime(bestTime);
-  mobileBullets.textContent = String(bullets.length);
+  syncMobileHudUi({
+    mode,
+    mobileHud,
+    mobileTime,
+    mobileBest,
+    mobileBullets,
+    elapsed,
+    bestTime,
+    bulletCount: bullets.length,
+  });
 }
 
 function syncSlowPowerUi(): void {
-  const config = powers.letargo;
-  const cover =
-    letargo.cooldownRemaining > 0
-      ? letargo.cooldownRemaining / config.cooldown
-      : 1 - letargo.energy / config.maxEnergy;
-  const stateName =
-    letargo.cooldownRemaining > 0
-      ? "cooldown"
-      : letargo.active
-        ? "active"
-        : letargo.energy >= config.maxEnergy
-          ? "ready"
-          : "recharging";
+  syncLetargoPowerUi({
+    slowPower,
+    letargo,
+    config: powers.letargo,
+  });
+}
 
-  slowPower.dataset.state = stateName;
-  slowPower.style.setProperty("--slow-cover", `${Math.max(0, Math.min(1, cover)) * 360}deg`);
-  slowPower.title =
-    stateName === "cooldown"
-      ? `Letargo: recargando ${formatTime(letargo.cooldownRemaining)}`
-      : `Letargo: Ctrl (${formatTime(letargo.energy)})`;
+function syncSettingsVisibility(): void {
+  syncSettingsVisibilityUi({
+    settingsToggle,
+    loadError,
+    settingsOpen,
+    state,
+  });
+}
+
+function syncStartScreen(): void {
+  syncStartScreenUi({
+    startScreen,
+    powersBar,
+    loadError,
+    settingsOpen,
+    state,
+  });
 }
 
 function openSettings(): void {
@@ -158,17 +177,6 @@ function applyLevel(nextLevel: LevelConfig): void {
   reset("ready");
   resizeCanvas();
   render();
-}
-
-function syncSettingsVisibility(): void {
-  const canConfigure = !loadError && !settingsOpen && (state === "ready" || state === "dead");
-  settingsToggle.hidden = !canConfigure;
-}
-
-function syncStartScreen(): void {
-  const showStart = !loadError && !settingsOpen && state === "ready";
-  startScreen.hidden = !showStart;
-  powersBar.hidden = showStart;
 }
 
 function reset(nextState: GameState = "running"): void {
@@ -445,7 +453,6 @@ settingsPanel.addEventListener("submit", (event: any) => {
 
 window.addEventListener("resize", resizeCanvas);
 window.addEventListener("resize", syncTouchControls);
-
 
 async function init(): Promise<void> {
   try {
