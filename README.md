@@ -113,9 +113,10 @@ Ctrl hold   → Letargo
 ### Mobile fullscreen
 
 ```txt
-Zona derecha drag        → movimiento
-Zona izquierda doble tap → Destello
-Zona izquierda hold      → Letargo
+Zona derecha drag           → movimiento
+Botón izquierdo superior    → Presagio
+Cuarto de círculo izquierdo → Letargo mientras mantienes presionado
+Botón izquierdo inferior    → Destello
 ```
 
 > [!NOTE]

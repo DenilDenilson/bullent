@@ -67,7 +67,10 @@ const {
   touchJoystickZone,
   touchJoystickBase,
   touchJoystickThumb,
-  touchPowerZone,
+  touchPowerPad,
+  touchLetargoZone,
+  touchDestelloButton,
+  touchPresagioButton,
   settingsToggle,
   settingsPanel,
   settingsClose,
@@ -330,13 +333,14 @@ const touchInput = createTouchInput({
     joystickZone: touchJoystickZone,
     joystickBase: touchJoystickBase,
     joystickThumb: touchJoystickThumb,
-    powerZone: touchPowerZone,
+    powerPad: touchPowerPad,
+    letargoZone: touchLetargoZone,
+    destelloButton: touchDestelloButton,
+    presagioButton: touchPresagioButton,
   },
   config: {
     joystickRadius: 42,
     joystickDeadZone: 8,
-    doubleTapWindow: 320,
-    holdDelay: 180,
   },
   callbacks: {
     isSettingsOpen: () => settingsOpen,
@@ -351,6 +355,10 @@ const touchInput = createTouchInput({
 
     onDash: () => {
       dashPlayer();
+    },
+
+    onPresagio: () => {
+      activatePresagioPower();
     },
   },
 });

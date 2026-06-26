@@ -11,7 +11,10 @@
         <section class="standalone-copy" aria-labelledby="standalone-title">
           <p class="standalone-kicker">portfolio game / MVP</p>
           <h1 id="standalone-title">Bullent</h1>
-          <p>Esquiva balas, rompe tu récord y prueba poderes en una arena compacta hecha para vivir dentro de un portfolio.</p>
+          <p>
+            Esquiva balas, rompe tu récord y prueba poderes en una arena
+            compacta hecha para vivir dentro de un portfolio.
+          </p>
           <div class="standalone-actions">
             <a href="https://www.denil.org/">volver a denil.org</a>
             <a href="/?embed=1">modo embed</a>
@@ -19,158 +22,206 @@
           </div>
         </section>
 
-      <div id="mobile-hud" aria-label="Mobile game status" hidden>
-        <span>Time <strong id="mobile-time">0.0s</strong></span>
-        <span>Best <strong id="mobile-best">0.0s</strong></span>
-        <span>Bullets <strong id="mobile-bullets">0</strong></span>
-      </div>
-
-      <div id="game-shell">
-        <canvas
-          id="game"
-          width="460"
-          height="560"
-          tabindex="0"
-          aria-label="Bullent game canvas"
-        ></canvas>
-        <button id="settings-toggle" type="button" aria-label="Configure level" title="Configure level" hidden>&#9881;</button>
-        <div id="powers-bar">
-          
-          <div id="power-dash" class="power-bubble" title="Dash corto: V" aria-label="Dash corto, tecla V">
-            <img src="/assets/powers/dash-bubble.svg" alt="" />
-          </div>
-
-          <div id="power-slow" class="power-bubble" title="Camara lenta: Ctrl" aria-label="Camara lenta, tecla Control">
-            <img src="/assets/powers/slow-bubble.svg" alt="" />
-          </div>
-
-          <div id="power-presagio" class="power-bubble" title="Presagio: C" aria-label="Presagio, tecla C">
-            <img src="/assets/powers/presagio-bubble.svg" alt="" />
-          </div>
-
+        <div id="mobile-hud" aria-label="Mobile game status" hidden>
+          <span>Time <strong id="mobile-time">0.0s</strong></span>
+          <span>Best <strong id="mobile-best">0.0s</strong></span>
+          <span>Bullets <strong id="mobile-bullets">0</strong></span>
         </div>
-        <section id="start-screen" aria-label="Pantalla de inicio de Bullent" hidden>
-          <div class="start-hero">
-            <h1>BULLENT</h1>
-            <div class="start-rule" aria-hidden="true"></div>
-            <p>BY DENIL</p>
+
+        <div id="game-shell">
+          <canvas
+            id="game"
+            width="460"
+            height="560"
+            tabindex="0"
+            aria-label="Bullent game canvas"
+          ></canvas>
+          <button
+            id="settings-toggle"
+            type="button"
+            aria-label="Configure level"
+            title="Configure level"
+            hidden
+          >
+            &#9881;
+          </button>
+          <div id="powers-bar">
+            <div
+              id="power-dash"
+              class="power-bubble"
+              title="Dash corto: V"
+              aria-label="Dash corto, tecla V"
+            >
+              <img src="/assets/powers/dash-bubble.svg" alt="" />
+            </div>
+
+            <div
+              id="power-slow"
+              class="power-bubble"
+              title="Camara lenta: Ctrl"
+              aria-label="Camara lenta, tecla Control"
+            >
+              <img src="/assets/powers/slow-bubble.svg" alt="" />
+            </div>
+
+            <div
+              id="power-presagio"
+              class="power-bubble"
+              title="Presagio: C"
+              aria-label="Presagio, tecla C"
+            >
+              <img src="/assets/powers/presagio-bubble.svg" alt="" />
+            </div>
           </div>
+          <section
+            id="start-screen"
+            aria-label="Pantalla de inicio de Bullent"
+            hidden
+          >
+            <div class="start-hero">
+              <h1>BULLENT</h1>
+              <div class="start-rule" aria-hidden="true"></div>
+              <p>BY DENIL</p>
+            </div>
 
-          <div class="start-intro">
-            <p class="start-tagline">ESQUIVA EL CAOS. ROMPE TU RÉCORD.</p>
-          </div>
+            <div class="start-intro">
+              <p class="start-tagline">ESQUIVA EL CAOS. ROMPE TU RÉCORD.</p>
+            </div>
 
-          <div class="start-controls" aria-label="Controles de movimiento">
-            <span>MOVIMIENTO</span>
-            <kbd>WASD</kbd>
-            <kbd>↑ ↓ ← →</kbd>
-          </div>
+            <div class="start-controls" aria-label="Controles de movimiento">
+              <span>MOVIMIENTO</span>
+              <kbd>WASD</kbd>
+              <kbd>↑ ↓ ← →</kbd>
+            </div>
 
-          <div class="start-powers" aria-label="Poderes">
-            <span class="start-section-label">PODERES</span>
-            <article class="start-power-card">
-              <div class="start-power-icon">
-                <img src="/assets/powers/dash-bubble.svg" alt="" />
-              </div>
-              <div>
-                <h2>Destello</h2>
-                <p>Reposición rápida hacia tu dirección actual.</p>
-              </div>
-              <span class="start-pill">V</span>
-            </article>
-            <article class="start-power-card">
-              <div class="start-power-icon">
-                <img src="/assets/powers/slow-bubble.svg" alt="" />
-              </div>
-              <div>
-                <h2>Letargo</h2>
-                <p>Ralentiza la simulación mientras tengas energía.</p>
-              </div>
-              <span class="start-pill">CTRL</span>
-            </article>
-            <article class="start-power-card">
-              <div class="start-power-icon">
-                <img src="/assets/powers/presagio-bubble.svg" alt="" />
-              </div>
-              <div>
-                <h2>Presagio</h2>
-                <p>Revela trayectorias de balas por un instante.</p>
-              </div>
-              <span class="start-pill">C</span>
-            </article>
-          </div>
+            <div class="start-powers" aria-label="Poderes">
+              <span class="start-section-label">PODERES</span>
+              <article class="start-power-card">
+                <div class="start-power-icon">
+                  <img src="/assets/powers/dash-bubble.svg" alt="" />
+                </div>
+                <div>
+                  <h2>Destello</h2>
+                  <p>Reposición rápida hacia tu dirección actual.</p>
+                </div>
+                <span class="start-pill">V</span>
+              </article>
+              <article class="start-power-card">
+                <div class="start-power-icon">
+                  <img src="/assets/powers/slow-bubble.svg" alt="" />
+                </div>
+                <div>
+                  <h2>Letargo</h2>
+                  <p>Ralentiza la simulación mientras tengas energía.</p>
+                </div>
+                <span class="start-pill">CTRL</span>
+              </article>
+              <article class="start-power-card">
+                <div class="start-power-icon">
+                  <img src="/assets/powers/presagio-bubble.svg" alt="" />
+                </div>
+                <div>
+                  <h2>Presagio</h2>
+                  <p>Revela trayectorias de balas por un instante.</p>
+                </div>
+                <span class="start-pill">C</span>
+              </article>
+            </div>
 
-          <button id="start-cta" type="button">CLICK / ENTER - INICIAR</button>
-        </section>
-        <form id="settings-panel" aria-label="Level settings" hidden>
-          <div class="settings-heading">
-            <strong>Level</strong>
-            <button id="settings-close" type="button" aria-label="Close settings">x</button>
-          </div>
+            <button id="start-cta" type="button">
+              CLICK / ENTER - INICIAR
+            </button>
+          </section>
+          <form id="settings-panel" aria-label="Level settings" hidden>
+            <div class="settings-heading">
+              <strong>Level</strong>
+              <button
+                id="settings-close"
+                type="button"
+                aria-label="Close settings"
+              >
+                x
+              </button>
+            </div>
 
-          <label>
-            Name
-            <input id="level-name" type="text" autocomplete="off" />
-          </label>
-
-          <div class="settings-grid">
             <label>
-              Arena W
-              <input id="arena-width" type="number" min="1" step="1" />
+              Name
+              <input id="level-name" type="text" autocomplete="off" />
             </label>
-            <label>
-              Arena H
-              <input id="arena-height" type="number" min="1" step="1" />
-            </label>
-            <label>
-              Player R
-              <input id="player-radius" type="number" min="1" step="1" />
-            </label>
-            <label>
-              Player speed
-              <input id="player-speed" type="number" min="1" step="1" />
-            </label>
-            <label>
-              Bullet R
-              <input id="bullet-radius" type="number" min="1" step="1" />
-            </label>
-            <label>
-              Bullet speed
-              <input id="bullet-speed" type="number" min="1" step="1" />
-            </label>
-            <label>
-              Max bullets
-              <input id="bullet-max" type="number" min="1" step="1" />
-            </label>
-          </div>
 
-          <div class="settings-heading">
-            <strong>Shooters</strong>
-            <button id="add-shooter" type="button">Add</button>
-          </div>
-          <div id="shooters-list"></div>
-          <p id="settings-error" role="alert"></p>
+            <div class="settings-grid">
+              <label>
+                Arena W
+                <input id="arena-width" type="number" min="1" step="1" />
+              </label>
+              <label>
+                Arena H
+                <input id="arena-height" type="number" min="1" step="1" />
+              </label>
+              <label>
+                Player R
+                <input id="player-radius" type="number" min="1" step="1" />
+              </label>
+              <label>
+                Player speed
+                <input id="player-speed" type="number" min="1" step="1" />
+              </label>
+              <label>
+                Bullet R
+                <input id="bullet-radius" type="number" min="1" step="1" />
+              </label>
+              <label>
+                Bullet speed
+                <input id="bullet-speed" type="number" min="1" step="1" />
+              </label>
+              <label>
+                Max bullets
+                <input id="bullet-max" type="number" min="1" step="1" />
+              </label>
+            </div>
 
-          <div class="settings-actions">
-            <button id="reset-settings" type="button">Reset</button>
-            <button id="cancel-settings" type="button">Cancel</button>
-            <button id="apply-settings" type="submit">Apply</button>
+            <div class="settings-heading">
+              <strong>Shooters</strong>
+              <button id="add-shooter" type="button">Add</button>
+            </div>
+            <div id="shooters-list"></div>
+            <p id="settings-error" role="alert"></p>
+
+            <div class="settings-actions">
+              <button id="reset-settings" type="button">Reset</button>
+              <button id="cancel-settings" type="button">Cancel</button>
+              <button id="apply-settings" type="submit">Apply</button>
+            </div>
+          </form>
+        </div>
+        <div id="touch-controls" aria-hidden="true" hidden>
+          <div id="touch-power-pad" class="touch-zone">
+            <button
+              id="touch-presagio-button"
+              class="touch-power-button touch-power-button-small"
+              type="button"
+              aria-label="Presagio"
+            >
+              <img src="/assets/powers/presagio-bubble.svg" alt="" />
+            </button>
+            <button id="touch-letargo-zone" type="button" aria-label="Letargo">
+              <img src="/assets/powers/slow-bubble.svg" alt="" />
+            </button>
+            <button
+              id="touch-destello-button"
+              class="touch-power-button touch-power-button-small"
+              type="button"
+              aria-label="Destello"
+            >
+              <img src="/assets/powers/dash-bubble.svg" alt="" />
+            </button>
           </div>
-        </form>
-      </div>
-      <div id="touch-controls" aria-hidden="true" hidden>
-        <div id="touch-power-zone" class="touch-zone">
-          <div id="touch-power-feedback">
-            <span>doble tap</span>
-            <strong>hold</strong>
+          <div id="touch-joystick-zone" class="touch-zone">
+            <div id="touch-joystick-base">
+              <div id="touch-joystick-thumb"></div>
+            </div>
           </div>
         </div>
-        <div id="touch-joystick-zone" class="touch-zone">
-          <div id="touch-joystick-base">
-            <div id="touch-joystick-thumb"></div>
-          </div>
-        </div>
-      </div>
       </main>
     </div>
     <script type="module" src="/src/main.ts"></script>

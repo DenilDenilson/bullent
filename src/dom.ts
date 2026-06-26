@@ -71,9 +71,21 @@ export function getDom() {
       document.querySelector<HTMLElement>("#touch-joystick-thumb"),
       "Missing #touch-joystick-thumb",
     ),
-    touchPowerZone: requireValue(
-      document.querySelector<HTMLElement>("#touch-power-zone"),
-      "Missing #touch-power-zone",
+    touchPowerPad: requireValue(
+      document.querySelector<HTMLElement>("#touch-power-pad"),
+      "Missing #touch-power-pad",
+    ),
+    touchLetargoZone: requireValue(
+      document.querySelector<HTMLButtonElement>("#touch-letargo-zone"),
+      "Missing #touch-letargo-zone",
+    ),
+    touchDestelloButton: requireValue(
+      document.querySelector<HTMLButtonElement>("#touch-destello-button"),
+      "Missing #touch-destello-button",
+    ),
+    touchPresagioButton: requireValue(
+      document.querySelector<HTMLButtonElement>("#touch-presagio-button"),
+      "Missing #touch-presagio-button",
     ),
     settingsToggle: requireValue(
       document.querySelector<HTMLButtonElement>("#settings-toggle"),

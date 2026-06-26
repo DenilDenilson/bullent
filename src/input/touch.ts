@@ -3,15 +3,16 @@ import type { Vec2 } from "../core.ts";
 export type TouchInputConfig = {
   joystickRadius: number;
   joystickDeadZone: number;
-  doubleTapWindow: number;
-  holdDelay: number;
 };
 
 export type TouchInputElements = {
   joystickZone: HTMLElement;
   joystickBase: HTMLElement;
   joystickThumb: HTMLElement;
-  powerZone: HTMLElement;
+  powerPad: HTMLElement;
+  letargoZone: HTMLButtonElement;
+  destelloButton: HTMLButtonElement;
+  presagioButton: HTMLButtonElement;
 };
 
 export type TouchInputCallbacks = {
@@ -19,6 +20,7 @@ export type TouchInputCallbacks = {
   onFocus: () => void;
   onStart: () => void;
   onDash: () => void;
+  onPresagio: () => void;
 };
 
 export type TouchInput = {
@@ -38,10 +40,7 @@ export function createTouchInput(args: {
   let touchDirection: Vec2 = { x: 0, y: 0 };
   let touchSlowHeld = false;
   let joystickPointerId: number | null = null;
-  let powerPointerId: number | null = null;
-  let powerStartedAt = 0;
-  let lastPowerTapAt = 0;
-  let holdTimer = 0;
+  let letargoPointerId: number | null = null;
 
   function focusAndStart(): void {
     callbacks.onFocus();
@@ -88,10 +87,16 @@ export function createTouchInput(args: {
   }
 
   function clearPowerHold(): void {
-    window.clearTimeout(holdTimer);
-    holdTimer = 0;
+    letargoPointerId = null;
     touchSlowHeld = false;
-    elements.powerZone.classList.remove("is-holding");
+    elements.letargoZone.classList.remove("is-holding");
+  }
+
+  function flashPowerButton(button: HTMLElement): void {
+    button.classList.add("did-activate");
+    window.setTimeout(() => {
+      button.classList.remove("did-activate");
+    }, 160);
   }
 
   elements.joystickZone.addEventListener("pointerdown", (event) => {
@@ -130,8 +135,8 @@ export function createTouchInput(args: {
     }
   });
 
-  elements.powerZone.addEventListener("pointerdown", (event) => {
-    if (callbacks.isSettingsOpen() || powerPointerId !== null) {
+  elements.letargoZone.addEventListener("pointerdown", (event) => {
+    if (callbacks.isSettingsOpen() || letargoPointerId !== null) {
       return;
     }
 
@@ -139,57 +144,44 @@ export function createTouchInput(args: {
 
     focusAndStart();
 
-    powerPointerId = event.pointerId;
-    powerStartedAt = performance.now();
-    elements.powerZone.setPointerCapture(event.pointerId);
-    elements.powerZone.classList.add("is-pressed");
-
-    holdTimer = window.setTimeout(() => {
-      touchSlowHeld = true;
-      elements.powerZone.classList.add("is-holding");
-    }, config.holdDelay);
+    letargoPointerId = event.pointerId;
+    touchSlowHeld = true;
+    elements.letargoZone.setPointerCapture(event.pointerId);
+    elements.letargoZone.classList.add("is-holding");
   });
 
-  elements.powerZone.addEventListener("pointerup", (event) => {
-    if (event.pointerId !== powerPointerId) {
-      return;
-    }
-
-    const now = performance.now();
-    const wasHolding = touchSlowHeld;
-
-    powerPointerId = null;
-    elements.powerZone.classList.remove("is-pressed");
-    clearPowerHold();
-
-    const isQuickTap = now - powerStartedAt < config.holdDelay;
-    const isDoubleTap = now - lastPowerTapAt < config.doubleTapWindow;
-
-    if (!wasHolding && isQuickTap && isDoubleTap) {
-      callbacks.onDash();
-      lastPowerTapAt = 0;
-
-      elements.powerZone.classList.add("did-dash");
-      window.setTimeout(() => {
-        elements.powerZone.classList.remove("did-dash");
-      }, 160);
-
-      return;
-    }
-
-    if (!wasHolding) {
-      lastPowerTapAt = now;
+  elements.letargoZone.addEventListener("pointerup", (event) => {
+    if (event.pointerId === letargoPointerId) {
+      clearPowerHold();
     }
   });
 
-  elements.powerZone.addEventListener("pointercancel", (event) => {
-    if (event.pointerId !== powerPointerId) {
+  elements.letargoZone.addEventListener("pointercancel", (event) => {
+    if (event.pointerId === letargoPointerId) {
+      clearPowerHold();
+    }
+  });
+
+  elements.destelloButton.addEventListener("pointerdown", (event) => {
+    if (callbacks.isSettingsOpen()) {
       return;
     }
 
-    powerPointerId = null;
-    elements.powerZone.classList.remove("is-pressed");
-    clearPowerHold();
+    event.preventDefault();
+    focusAndStart();
+    callbacks.onDash();
+    flashPowerButton(elements.destelloButton);
+  });
+
+  elements.presagioButton.addEventListener("pointerdown", (event) => {
+    if (callbacks.isSettingsOpen()) {
+      return;
+    }
+
+    event.preventDefault();
+    focusAndStart();
+    callbacks.onPresagio();
+    flashPowerButton(elements.presagioButton);
   });
 
   return {

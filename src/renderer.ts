@@ -44,8 +44,8 @@ export function resizeGameCanvas({
 }: ResizeGameCanvasArgs): void {
   const ratio = window.devicePixelRatio || 1;
   const mobileControlsHeight = Math.min(
-    160,
-    Math.max(128, window.innerHeight * 0.18),
+    240,
+    Math.max(176, window.innerHeight * 0.26),
   );
   const mobileAvailableHeight = Math.max(
     360,
