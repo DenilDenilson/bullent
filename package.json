@@ -6,7 +6,8 @@
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 5173",
     "build": "tsc && vite build",
-    "selfcheck": "node src/selfcheck.ts"
+    "selfcheck": "node src/selfcheck.ts",
+    "bot:benchmark": "node src/bot-benchmark.ts"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.3.1",
