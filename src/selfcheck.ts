@@ -19,10 +19,12 @@ import {
   updatePresagio,
 } from "./powers/presagio.ts";
 import { parsePowersConfig } from "./powers/index.ts";
+import { TIME_PICKUP_BONUS_SECONDS } from "./pickups.ts";
 import {
   activatePresagioGameSession,
   createGameSession,
   dashGameSession,
+  getSessionScoreTime,
   resetGameSession,
   updateGameSession,
 } from "./session.ts";
@@ -202,6 +204,30 @@ assert.ok(session.presagio.activeRemaining > 0);
 assert.ok(Array.isArray(session.presagioSegments));
 
 assert.equal(updateResult.died, false);
+assert.equal(updateResult.collectedTimePickup, false);
 assert.equal(session.elapsed, 1);
+
+const pickupSession = createGameSession({
+  level: DEFAULT_LEVEL,
+  powers,
+  state: "running",
+});
+
+pickupSession.timePickup = {
+  pos: { ...pickupSession.player.pos },
+  radius: 12,
+  value: TIME_PICKUP_BONUS_SECONDS,
+};
+
+const pickupResult = updateGameSession(pickupSession, {
+  rawDt: 0,
+  direction: { x: 0, y: 0 },
+  slowHeld: false,
+});
+
+assert.equal(pickupResult.died, false);
+assert.equal(pickupResult.collectedTimePickup, true);
+assert.equal(pickupSession.bonusTime, TIME_PICKUP_BONUS_SECONDS);
+assert.equal(getSessionScoreTime(pickupSession), TIME_PICKUP_BONUS_SECONDS);
 
 console.log(":) selfcheck passed!");

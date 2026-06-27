@@ -7,6 +7,7 @@ import type {
   Vec2,
 } from "./core.ts";
 import type { PageMode } from "./mode.ts";
+import type { TimePickup } from "./pickups.ts";
 import type { LetargoTrailPoint } from "./powers/letargo.ts";
 import type { PresagioSegment } from "./powers/presagio.ts";
 import { formatTime } from "./utils.ts";
@@ -29,6 +30,7 @@ export type RenderGameArgs = {
   bullets: Bullet[];
   playerTrail: LetargoTrailPoint[];
   presagioSegments: PresagioSegment[];
+  timePickup: TimePickup | null;
   trailLifetime: number;
   elapsed: number;
   bestTime: number;
@@ -95,6 +97,7 @@ export function renderGame(args: RenderGameArgs): void {
     bullets,
     playerTrail,
     presagioSegments,
+    timePickup,
     trailLifetime,
     elapsed,
     bestTime,
@@ -136,6 +139,8 @@ export function renderGame(args: RenderGameArgs): void {
   for (const shooter of shooters) {
     drawCircle(ctx, shooter.pos, 12, "#f97316", "#fb923c");
   }
+
+  drawTimePickup(ctx, timePickup, elapsed);
 
   drawPlayerTrail(ctx, playerTrail, trailLifetime);
   drawCircle(ctx, player.pos, player.radius, "#a78bfa", "#c4b5fd");
@@ -202,6 +207,41 @@ function drawPlayerTrail(
     ctx.fill();
     ctx.restore();
   }
+}
+
+function drawTimePickup(
+  ctx: CanvasRenderingContext2D,
+  pickup: TimePickup | null,
+  elapsed: number,
+): void {
+  if (!pickup) {
+    return;
+  }
+
+  const pulse = 1 + Math.sin(elapsed * 5) * 0.08;
+
+  ctx.save();
+  ctx.translate(pickup.pos.x, pickup.pos.y);
+  ctx.rotate(Math.PI / 4);
+  ctx.scale(pulse, pulse);
+  ctx.shadowBlur = 24;
+  ctx.shadowColor = "#facc15";
+  ctx.fillStyle = "#facc15";
+  ctx.strokeStyle = "#fef9c3";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.rect(-pickup.radius, -pickup.radius, pickup.radius * 2, pickup.radius * 2);
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+
+  ctx.save();
+  ctx.fillStyle = "rgb(254 249 195 / 0.92)";
+  ctx.font = "700 10px Inter, ui-sans-serif, system-ui, sans-serif";
+  ctx.textAlign = "center";
+  ctx.textBaseline = "middle";
+  ctx.fillText(`+${pickup.value}`, pickup.pos.x, pickup.pos.y);
+  ctx.restore();
 }
 
 function drawPresagioSegments(

@@ -1,0 +1,361 @@
+diff --git a/src/main.ts b/src/main.ts
+index 77bd7af..4920767 100644
+--- a/src/main.ts
++++ b/src/main.ts
+@@ -24,6 +24,7 @@ import {
+   activatePresagioGameSession,
+   createGameSession,
+   dashGameSession,
++  getSessionScoreTime,
+   resetGameSession,
+   setSessionLevel,
+   updateGameSession,
+@@ -120,7 +121,7 @@ function syncMobileHud(): void {
+     mobileTime,
+     mobileBest,
+     mobileBullets,
+-    elapsed: session?.elapsed ?? 0,
++    elapsed: session ? getSessionScoreTime(session) : 0,
+     bestTime,
+     bulletCount: session?.bullets.length ?? 0,
+   });
+@@ -192,9 +193,10 @@ function render(): void {
+     bullets: session?.bullets ?? [],
+     playerTrail: session?.playerTrail ?? [],
+     presagioSegments: session?.presagioSegments ?? [],
++    timePickup: session?.timePickup ?? null,
+     trailLifetime:
+       loadError || !session ? 1 : session.powers.letargo.visual.trailLifetime,
+-    elapsed: session?.elapsed ?? 0,
++    elapsed: session ? getSessionScoreTime(session) : 0,
+     bestTime,
+     loadError,
+   });
+@@ -286,7 +288,7 @@ function update(rawDt: number): void {
+   });
+ 
+   if (result.died) {
+-    bestTime = saveBestTime(bestTime, session.elapsed);
++    bestTime = saveBestTime(bestTime, getSessionScoreTime(session));
+     syncTouchControls();
+   }
+ }
+diff --git a/src/pickups.ts b/src/pickups.ts
+new file mode 100644
+index 0000000..0ed0dd3
+--- /dev/null
++++ b/src/pickups.ts
+@@ -0,0 +1,69 @@
++import { circlesTouch, type LevelConfig, type Player, type Vec2 } from "./core.ts";
++
++export const TIME_PICKUP_BONUS_SECONDS = 15;
++const timePickupRadius = 13;
++const spawnPadding = 28;
++const minPlayerDistance = 88;
++
++export type TimePickup = {
++  pos: Vec2;
++  radius: number;
++  value: number;
++};
++
++export function createTimePickup(
++  level: LevelConfig,
++  player: Player,
++  random: () => number = Math.random,
++): TimePickup {
++  let candidate = randomTimePickup(level, random);
++
++  for (let attempt = 0; attempt < 30; attempt += 1) {
++    if (distance(candidate.pos, player.pos) >= minPlayerDistance) {
++      return candidate;
++    }
++
++    candidate = randomTimePickup(level, random);
++  }
++
++  // ponytail: small arenas may not have a far-safe point; accept the last candidate.
++  return candidate;
++}
++
++export function playerCollectsTimePickup(
++  player: Player,
++  pickup: TimePickup,
++): boolean {
++  return circlesTouch(player, pickup);
++}
++
++function randomTimePickup(
++  level: LevelConfig,
++  random: () => number,
++): TimePickup {
++  const minX = spawnPadding + timePickupRadius;
++  const maxX = level.arena.width - spawnPadding - timePickupRadius;
++  const minY = spawnPadding + timePickupRadius;
++  const maxY = level.arena.height - spawnPadding - timePickupRadius;
++
++  return {
++    pos: {
++      x: randomBetween(minX, maxX, random),
++      y: randomBetween(minY, maxY, random),
++    },
++    radius: timePickupRadius,
++    value: TIME_PICKUP_BONUS_SECONDS,
++  };
++}
++
++function randomBetween(
++  min: number,
++  max: number,
++  random: () => number,
++): number {
++  return min + (max - min) * random();
++}
++
++function distance(a: Vec2, b: Vec2): number {
++  return Math.hypot(a.x - b.x, a.y - b.y);
++}
+diff --git a/src/renderer.ts b/src/renderer.ts
+index 641c324..cce5a63 100644
+--- a/src/renderer.ts
++++ b/src/renderer.ts
+@@ -7,6 +7,7 @@ import type {
+   Vec2,
+ } from "./core.ts";
+ import type { PageMode } from "./mode.ts";
++import type { TimePickup } from "./pickups.ts";
+ import type { LetargoTrailPoint } from "./powers/letargo.ts";
+ import type { PresagioSegment } from "./powers/presagio.ts";
+ import { formatTime } from "./utils.ts";
+@@ -29,6 +30,7 @@ export type RenderGameArgs = {
+   bullets: Bullet[];
+   playerTrail: LetargoTrailPoint[];
+   presagioSegments: PresagioSegment[];
++  timePickup: TimePickup | null;
+   trailLifetime: number;
+   elapsed: number;
+   bestTime: number;
+@@ -95,6 +97,7 @@ export function renderGame(args: RenderGameArgs): void {
+     bullets,
+     playerTrail,
+     presagioSegments,
++    timePickup,
+     trailLifetime,
+     elapsed,
+     bestTime,
+@@ -137,6 +140,8 @@ export function renderGame(args: RenderGameArgs): void {
+     drawCircle(ctx, shooter.pos, 12, "#f97316", "#fb923c");
+   }
+ 
++  drawTimePickup(ctx, timePickup, elapsed);
++
+   drawPlayerTrail(ctx, playerTrail, trailLifetime);
+   drawCircle(ctx, player.pos, player.radius, "#a78bfa", "#c4b5fd");
+ 
+@@ -204,6 +209,41 @@ function drawPlayerTrail(
+   }
+ }
+ 
++function drawTimePickup(
++  ctx: CanvasRenderingContext2D,
++  pickup: TimePickup | null,
++  elapsed: number,
++): void {
++  if (!pickup) {
++    return;
++  }
++
++  const pulse = 1 + Math.sin(elapsed * 5) * 0.08;
++
++  ctx.save();
++  ctx.translate(pickup.pos.x, pickup.pos.y);
++  ctx.rotate(Math.PI / 4);
++  ctx.scale(pulse, pulse);
++  ctx.shadowBlur = 24;
++  ctx.shadowColor = "#facc15";
++  ctx.fillStyle = "#facc15";
++  ctx.strokeStyle = "#fef9c3";
++  ctx.lineWidth = 2;
++  ctx.beginPath();
++  ctx.rect(-pickup.radius, -pickup.radius, pickup.radius * 2, pickup.radius * 2);
++  ctx.fill();
++  ctx.stroke();
++  ctx.restore();
++
++  ctx.save();
++  ctx.fillStyle = "rgb(254 249 195 / 0.92)";
++  ctx.font = "700 10px Inter, ui-sans-serif, system-ui, sans-serif";
++  ctx.textAlign = "center";
++  ctx.textBaseline = "middle";
++  ctx.fillText(`+${pickup.value}`, pickup.pos.x, pickup.pos.y);
++  ctx.restore();
++}
++
+ function drawPresagioSegments(
+   ctx: CanvasRenderingContext2D,
+   segments: PresagioSegment[],
+diff --git a/src/selfcheck.ts b/src/selfcheck.ts
+index e4e8051..fd6c2b6 100644
+--- a/src/selfcheck.ts
++++ b/src/selfcheck.ts
+@@ -19,10 +19,12 @@ import {
+   updatePresagio,
+ } from "./powers/presagio.ts";
+ import { parsePowersConfig } from "./powers/index.ts";
++import { TIME_PICKUP_BONUS_SECONDS } from "./pickups.ts";
+ import {
+   activatePresagioGameSession,
+   createGameSession,
+   dashGameSession,
++  getSessionScoreTime,
+   resetGameSession,
+   updateGameSession,
+ } from "./session.ts";
+@@ -202,6 +204,30 @@ assert.ok(session.presagio.activeRemaining > 0);
+ assert.ok(Array.isArray(session.presagioSegments));
+ 
+ assert.equal(updateResult.died, false);
++assert.equal(updateResult.collectedTimePickup, false);
+ assert.equal(session.elapsed, 1);
+ 
++const pickupSession = createGameSession({
++  level: DEFAULT_LEVEL,
++  powers,
++  state: "running",
++});
++
++pickupSession.timePickup = {
++  pos: { ...pickupSession.player.pos },
++  radius: 12,
++  value: TIME_PICKUP_BONUS_SECONDS,
++};
++
++const pickupResult = updateGameSession(pickupSession, {
++  rawDt: 0,
++  direction: { x: 0, y: 0 },
++  slowHeld: false,
++});
++
++assert.equal(pickupResult.died, false);
++assert.equal(pickupResult.collectedTimePickup, true);
++assert.equal(pickupSession.bonusTime, TIME_PICKUP_BONUS_SECONDS);
++assert.equal(getSessionScoreTime(pickupSession), TIME_PICKUP_BONUS_SECONDS);
++
+ console.log(":) selfcheck passed!");
+diff --git a/src/session.ts b/src/session.ts
+index d6ab11e..8a875a2 100644
+--- a/src/session.ts
++++ b/src/session.ts
+@@ -30,6 +30,11 @@ import {
+   type PresagioSegment,
+   type PresagioState,
+ } from "./powers/presagio.ts";
++import {
++  createTimePickup,
++  playerCollectsTimePickup,
++  type TimePickup,
++} from "./pickups.ts";
+ import { cloneLevel } from "./utils.ts";
+ 
+ export type GameSession = {
+@@ -42,6 +47,8 @@ export type GameSession = {
+   letargo: LetargoState;
+   presagio: PresagioState;
+   presagioSegments: PresagioSegment[];
++  timePickup: TimePickup;
++  bonusTime: number;
+   elapsed: number;
+   lastDirection: Vec2;
+   playerTrail: LetargoTrailPoint[];
+@@ -50,6 +57,7 @@ export type GameSession = {
+ 
+ export type GameSessionUpdateResult = {
+   died: boolean;
++  collectedTimePickup: boolean;
+ };
+ 
+ export function createGameSession(args: {
+@@ -58,17 +66,20 @@ export function createGameSession(args: {
+   state?: GameState;
+ }): GameSession {
+   const level = cloneLevel(args.level);
++  const player = createPlayer(level);
+ 
+   return {
+     level,
+     powers: args.powers,
+     state: args.state ?? "ready",
+-    player: createPlayer(level),
++    player,
+     shooters: createShooters(level),
+     bullets: [],
+     letargo: createLetargoState(args.powers.letargo),
+     presagio: createPresagioState(),
+     presagioSegments: [],
++    timePickup: createTimePickup(level, player),
++    bonusTime: 0,
+     elapsed: 0,
+     lastDirection: { x: 0, y: -1 },
+     playerTrail: [],
+@@ -96,6 +107,8 @@ export function resetGameSession(
+   session.letargo = createLetargoState(session.powers.letargo);
+   session.presagio = createPresagioState();
+   session.presagioSegments = [];
++  session.timePickup = createTimePickup(session.level, session.player);
++  session.bonusTime = 0;
+   session.elapsed = 0;
+   session.lastDirection = { x: 0, y: -1 };
+   session.playerTrail = [];
+@@ -128,6 +141,10 @@ export function activatePresagioGameSession(session: GameSession): void {
+     : [];
+ }
+ 
++export function getSessionScoreTime(session: GameSession): number {
++  return session.elapsed + session.bonusTime;
++}
++
+ export function updateGameSession(
+   session: GameSession,
+   args: {
+@@ -137,7 +154,7 @@ export function updateGameSession(
+   },
+ ): GameSessionUpdateResult {
+   if (session.state !== "running") {
+-    return { died: false };
++    return { died: false, collectedTimePickup: false };
+   }
+ 
+   const letargoStep = updateLetargo(
+@@ -163,6 +180,8 @@ export function updateGameSession(
+     session.lastDirection = args.direction;
+   }
+ 
++  const collectedTimePickup = collectSessionTimePickup(session);
++
+   updateSessionTrail(session, args.rawDt);
+   updateSessionShooters(session, dt);
+   updateSessionBullets(session, dt);
+@@ -172,10 +191,21 @@ export function updateGameSession(
+ 
+   if (session.bullets.some((bullet) => circlesTouch(session.player, bullet))) {
+     session.state = "dead";
+-    return { died: true };
++    return { died: true, collectedTimePickup };
+   }
+ 
+-  return { died: false };
++  return { died: false, collectedTimePickup };
++}
++
++function collectSessionTimePickup(session: GameSession): boolean {
++  if (!playerCollectsTimePickup(session.player, session.timePickup)) {
++    return false;
++  }
++
++  session.bonusTime += session.timePickup.value;
++  session.timePickup = createTimePickup(session.level, session.player);
++
++  return true;
+ }
+ 
+ function updateSessionTrail(session: GameSession, rawDt: number): void {

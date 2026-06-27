@@ -30,6 +30,11 @@ import {
   type PresagioSegment,
   type PresagioState,
 } from "./powers/presagio.ts";
+import {
+  createTimePickup,
+  playerCollectsTimePickup,
+  type TimePickup,
+} from "./pickups.ts";
 import { cloneLevel } from "./utils.ts";
 
 export type GameSession = {
@@ -42,6 +47,8 @@ export type GameSession = {
   letargo: LetargoState;
   presagio: PresagioState;
   presagioSegments: PresagioSegment[];
+  timePickup: TimePickup;
+  bonusTime: number;
   elapsed: number;
   lastDirection: Vec2;
   playerTrail: LetargoTrailPoint[];
@@ -50,6 +57,7 @@ export type GameSession = {
 
 export type GameSessionUpdateResult = {
   died: boolean;
+  collectedTimePickup: boolean;
 };
 
 export function createGameSession(args: {
@@ -58,17 +66,20 @@ export function createGameSession(args: {
   state?: GameState;
 }): GameSession {
   const level = cloneLevel(args.level);
+  const player = createPlayer(level);
 
   return {
     level,
     powers: args.powers,
     state: args.state ?? "ready",
-    player: createPlayer(level),
+    player,
     shooters: createShooters(level),
     bullets: [],
     letargo: createLetargoState(args.powers.letargo),
     presagio: createPresagioState(),
     presagioSegments: [],
+    timePickup: createTimePickup(level, player),
+    bonusTime: 0,
     elapsed: 0,
     lastDirection: { x: 0, y: -1 },
     playerTrail: [],
@@ -96,6 +107,8 @@ export function resetGameSession(
   session.letargo = createLetargoState(session.powers.letargo);
   session.presagio = createPresagioState();
   session.presagioSegments = [];
+  session.timePickup = createTimePickup(session.level, session.player);
+  session.bonusTime = 0;
   session.elapsed = 0;
   session.lastDirection = { x: 0, y: -1 };
   session.playerTrail = [];
@@ -128,6 +141,10 @@ export function activatePresagioGameSession(session: GameSession): void {
     : [];
 }
 
+export function getSessionScoreTime(session: GameSession): number {
+  return session.elapsed + session.bonusTime;
+}
+
 export function updateGameSession(
   session: GameSession,
   args: {
@@ -137,7 +154,7 @@ export function updateGameSession(
   },
 ): GameSessionUpdateResult {
   if (session.state !== "running") {
-    return { died: false };
+    return { died: false, collectedTimePickup: false };
   }
 
   const letargoStep = updateLetargo(
@@ -163,6 +180,8 @@ export function updateGameSession(
     session.lastDirection = args.direction;
   }
 
+  const collectedTimePickup = collectSessionTimePickup(session);
+
   updateSessionTrail(session, args.rawDt);
   updateSessionShooters(session, dt);
   updateSessionBullets(session, dt);
@@ -172,10 +191,21 @@ export function updateGameSession(
 
   if (session.bullets.some((bullet) => circlesTouch(session.player, bullet))) {
     session.state = "dead";
-    return { died: true };
+    return { died: true, collectedTimePickup };
   }
 
-  return { died: false };
+  return { died: false, collectedTimePickup };
+}
+
+function collectSessionTimePickup(session: GameSession): boolean {
+  if (!playerCollectsTimePickup(session.player, session.timePickup)) {
+    return false;
+  }
+
+  session.bonusTime += session.timePickup.value;
+  session.timePickup = createTimePickup(session.level, session.player);
+
+  return true;
 }
 
 function updateSessionTrail(session: GameSession, rawDt: number): void {

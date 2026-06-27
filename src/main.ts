@@ -24,6 +24,7 @@ import {
   activatePresagioGameSession,
   createGameSession,
   dashGameSession,
+  getSessionScoreTime,
   resetGameSession,
   setSessionLevel,
   updateGameSession,
@@ -120,7 +121,7 @@ function syncMobileHud(): void {
     mobileTime,
     mobileBest,
     mobileBullets,
-    elapsed: session?.elapsed ?? 0,
+    elapsed: session ? getSessionScoreTime(session) : 0,
     bestTime,
     bulletCount: session?.bullets.length ?? 0,
   });
@@ -192,9 +193,10 @@ function render(): void {
     bullets: session?.bullets ?? [],
     playerTrail: session?.playerTrail ?? [],
     presagioSegments: session?.presagioSegments ?? [],
+    timePickup: session?.timePickup ?? null,
     trailLifetime:
       loadError || !session ? 1 : session.powers.letargo.visual.trailLifetime,
-    elapsed: session?.elapsed ?? 0,
+    elapsed: session ? getSessionScoreTime(session) : 0,
     bestTime,
     loadError,
   });
@@ -286,7 +288,7 @@ function update(rawDt: number): void {
   });
 
   if (result.died) {
-    bestTime = saveBestTime(bestTime, session.elapsed);
+    bestTime = saveBestTime(bestTime, getSessionScoreTime(session));
     syncTouchControls();
   }
 }
