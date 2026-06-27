@@ -62,10 +62,13 @@ Incluye:
 
 * 🕹️ survival infinito;
 * 🏆 récord local con `localStorage`;
+* 💎 rombos dorados de tiempo que suman segundos al marcador;
 * ⚙️ configuración de nivel desde JSON y panel in-game;
 * 🧩 modo embebible por `iframe`;
 * 📱 modo mobile fullscreen con controles táctiles;
-* ⚡ poderes de jugador;
+* ⚡ tres poderes de jugador implementados: Destello, Letargo y Presagio;
+* 🎯 disparadores triangulares que apuntan con su vértice;
+* ✨ feedback visual para dash, pickups, cámara lenta y trayectorias;
 * ☁️ deploy estático en Cloudflare Pages.
 
 ---
@@ -88,10 +91,11 @@ La meta es simple:
 | Elemento        | Comportamiento                                |
 | --------------- | --------------------------------------------- |
 | 🟣 Jugador      | Círculo controlado con teclado o gestos touch |
-| 🎯 Disparadores | Apuntan hacia la posición actual del jugador  |
+| 🎯 Disparadores | Triángulos que apuntan hacia la posición actual del jugador |
 | 💥 Balas        | Rebotan contra las paredes                    |
 | ☠️ Daño         | Una bala toca al jugador y termina la partida |
-| ⏱️ Objetivo     | Aguantar el mayor tiempo posible              |
+| ⏱️ Objetivo     | Aguantar el mayor tiempo posible y sumar bonus |
+| 💎 Pickups      | Rombos dorados que suman segundos al reloj    |
 | 🧩 Nivel        | Configurable mediante JSON o panel in-game    |
 | 🏆 Récord       | Mejor tiempo guardado localmente              |
 
@@ -107,6 +111,7 @@ A / ←       → moverse izquierda
 S / ↓       → moverse abajo
 D / →       → moverse derecha
 V           → Destello
+C           → Presagio
 Ctrl hold   → Letargo
 ```
 
@@ -141,6 +146,7 @@ Esto genera un sistema simple, pero con comportamiento emergente.
 | 🟣 Jugador | Tamaño y velocidad |
 | 🧱 Arena | Tamaño del espacio jugable |
 | 🐢 Poderes | Energía, cooldown y escala temporal |
+| 💎 Pickups | Tiempo bonus y frecuencia indirecta por recolección |
 
 > [!WARNING]
 > La dificultad puede escalar rápido.
@@ -179,9 +185,18 @@ Bullent usa una arquitectura pequeña y directa.
 
 | Archivo / módulo | Responsabilidad |
 | ---------------- | --------------- |
-| `src/core.ts` | Lógica pura testeable: movimiento, balas, colisiones, configuración |
-| `src/main.ts` | Loop, input, render, DOM, modos de URL |
-| `src/style.css` | Estilos, start screen, embed, mobile fullscreen |
+| `src/core.ts` | Tipos base, movimiento, balas, colisiones y parsing de niveles |
+| `src/session.ts` | Estado jugable: partida, muerte, score, poderes, pickups y efectos |
+| `src/renderer.ts` | Render Canvas: arena, jugador, bullets, shooters, pickups y VFX |
+| `src/input/keyboard.ts` | Input de teclado: movimiento, Destello, Letargo y Presagio |
+| `src/input/touch.ts` | Input táctil para mobile fullscreen |
+| `src/powers/*.ts` | Lógica aislada de Destello, Letargo y Presagio |
+| `src/pickups.ts` | Rombos de tiempo y lógica de recolección |
+| `src/ui.ts` | Sincronización de HUD, cooldowns, start screen y settings |
+| `src/settings.ts` | Lectura y escritura del panel de configuración |
+| `src/mode.ts` | Modos `standalone`, `embed` y `mobile` |
+| `src/main.ts` | Orquestación: carga, loop, eventos y pegamento entre módulos |
+| `src/style.css` | Estilos, start screen, embed, mobile fullscreen y controles |
 | `public/levels.json` | Balance del nivel |
 | `public/powers.json` | Balance interno de poderes |
 | `docs/SPEC*.md` | Specs del proceso SDD |
@@ -191,6 +206,7 @@ La configuración se mantiene como datos simples:
 ```txt
 niveles
 poderes
+pickups
 colores
 tema visual
 constantes del juego
@@ -204,7 +220,14 @@ valores de balance
 
 ## 🎨 Estilo visual
 
-La primera versión usa una estética **minimalista neón / glassmorphism**.
+La versión actual usa una estética **minimalista neón / glassmorphism**, con una capa más arcade:
+
+* 💎 pickups como diamantes dorados pulsantes;
+* 🎯 enemigos triangulares naranjas orientados al jugador;
+* ⚡ rastro visual de Destello;
+* 🐢 estela tipo cámara lenta para Letargo;
+* 🧭 líneas fucsias de predicción para Presagio;
+* ✨ feedback de recolección `+15s`.
 
 El estilo está separado de la lógica del juego para permitir cambios visuales sin tocar reglas internas.
 
@@ -309,8 +332,9 @@ Bullent no es solo un juego pequeño. También es una excusa para practicar fund
 | 🎨 Rendering      | Dibujo en Canvas 2D                                    |
 | 🧠 Estado         | Ready, running, dead, restart                          |
 | 📈 Dificultad     | Balance, progresión y zona de flujo                    |
-| 🧩 Modularidad    | Separación entre lógica, render, input y configuración |
+| 🧩 Modularidad    | Separación entre sesión, render, input, poderes y configuración |
 | 🌐 Distribución   | Deploy estático, rutas por modo e iframe               |
+| 💎 Diseño sistémico | Pickups, score bonus y feedback de recolección        |
 
 ---
 
@@ -326,7 +350,7 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 | --- | --- | --- | --- | --- | --- |
 | 🟢 Implementado | ⚡ Destello | Movimiento | `V` / doble tap mobile | Desplaza rápidamente al jugador en una dirección | Sin cooldown; puede meterte en peligro si lo usas mal |
 | 🟢 Implementado | 🐢 Letargo | Control temporal | `Ctrl` / hold mobile | Ralentiza el tiempo global mientras se mantiene presionado | Energía de 3s y cooldown al agotarse |
-| 🟡 Próximo | 🧭 Presagio | Lectura táctica | TBD | Dibuja líneas hacia el próximo rebote de las balas para encontrar zonas seguras | Cooldown fijo de 2s; debe ser claro sin ensuciar la arena |
+| 🟢 Implementado | 🧭 Presagio | Lectura táctica | `C` / botón mobile | Dibuja líneas hacia el próximo rebote de las balas para encontrar zonas seguras | Cooldown fijo de 2s; debe ser claro sin ensuciar la arena |
 | ⚪ Pendiente | 🛡️ Égida | Defensivo | TBD | Bloquea una bala o permite sobrevivir a un golpe | Debe durar poco o bloquear solo un impacto |
 | ⚪ Pendiente | 🌀 Pulso | Control de espacio | TBD | Empuja las balas cercanas hacia afuera | No debería destruir todas las balas |
 | ⚪ Pendiente | ✨ Desfase | Evasión | TBD | El jugador ignora colisiones por un instante | Requiere timing preciso |
@@ -338,7 +362,7 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 
 | Estado | Poder enemigo | Tipo | Efecto | Uso principal | Riesgo / Balance |
 | --- | --- | --- | --- | --- | --- |
-| 🟢 Implementado | 🎯 Disparo | Base | Apunta hacia la posición actual del jugador | Primer patrón de aprendizaje | Puede volverse plano sin variantes |
+| 🟢 Implementado | 🔺 Disparo triangular | Base | Un triángulo naranja apunta y dispara desde su vértice hacia el jugador | Primer patrón de aprendizaje | Puede volverse plano sin variantes |
 | ⚪ Pendiente | 🎯 Predict | Precisión | Apunta hacia donde el jugador probablemente estará | Castigar movimiento en línea recta | No debe ser perfecto para evitar injusticia |
 | ⚪ Pendiente | 🔁 Doble disparo | Presión | Lanza dos balas con separación angular | Crear pequeños abanicos de peligro | Puede saturar rápido la pantalla |
 | ⚪ Pendiente | 🧨 Bala pesada | Control de espacio | Dispara una bala más grande y lenta | Bloquear rutas del jugador | Debe ser fácil de leer visualmente |
@@ -348,11 +372,15 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 | ⚪ Pendiente | 🧲 Shooter imantado | Seguimiento suave | Las balas corrigen ligeramente su dirección hacia el jugador | Aumentar presión constante | No debe sentirse como misil imposible |
 | ⚪ Pendiente | 🧬 Bala divisoria | Caos progresivo | La bala se divide tras ciertos rebotes | Crear dificultad avanzada | Puede romper la curva de dificultad |
 
-### Roadmap de IA / bots
-- Objetos para recoger como rombos dorados que aparecen aleatoriamene que suman puntos en el reloj, suman segundos
-- Cambiar los enemigos de circulo naranja a triangulos naranjas que disparan por su vértice
-- Posibilidad de atacar, cuando se quiera implementar niveles en un futuro
-- Hacer esta sección más bonita
+### Sistemas y pickups
+
+| Estado | Sistema | Tipo | Efecto | Nota |
+| --- | --- | --- | --- | --- |
+| 🟢 Implementado | 💎 Diamantes de tiempo | Pickup | Rombos dorados aparecen en la arena y suman `+15s` al score | El marcador final usa tiempo sobrevivido + bonus |
+| 🟢 Implementado | ✨ Feedback de recolección | VFX | Anillo dorado y texto `+15s` al recoger un diamante | Refuerza que el score cambió |
+| 🟢 Implementado | ⚡ Rastro de Destello | VFX | Línea/eco entre posición inicial y final del dash | Hace legible el reposicionamiento |
+| 🟢 Implementado | 🧭 Líneas de Presagio | VFX táctico | Muestra hacia dónde viajarán las balas hasta el próximo rebote | Ayuda a leer zonas seguras |
+| ⚪ Pendiente | 🗡️ Ataque del jugador | Combate / niveles | Permitir atacar cuando existan niveles más estructurados | No entra hasta que el diseño pida objetivos ofensivos |
 
 ### Roadmap de IA / bots
 
@@ -366,25 +394,27 @@ Orden recomendado:
 
 | Prioridad | Categoría | Poder / sistema | Motivo |
 | ---: | --- | --- | --- |
-| 1 | Jugador | 🧭 Presagio | Añade lectura táctica sin subir la dificultad enemiga |
-| 2 | Jugador | 🛡️ Escudo de impacto | Perdona errores sin eliminar el peligro |
+| 1 | Jugador | 🛡️ Escudo de impacto | Perdona errores sin eliminar el peligro |
+| 2 | Jugador | 🌀 Pulso | Da una respuesta cuando el jugador está rodeado |
 | 3 | Enemigo | 🎯 Disparo predictivo | Hace que el movimiento del jugador importe más |
 | 4 | Enemigo | 🧨 Bala pesada | Añade variedad sin complicar demasiado |
-| 5 | Sistema | 🤖 Bot autoplay | Vuelve el juego más vistoso como pieza de portfolio |
-| 6 | Sistema | 📊 Bot de benchmark | Ayuda a balancear sin depender solo de intuición |
-| 7 | Sistema | 🧬 IA evolutiva entrenada | Sería una capa avanzada, cargada ya entrenada |
+| 5 | Sistema | 🗡️ Ataque del jugador | Abre la puerta a niveles con objetivos ofensivos |
+| 6 | Sistema | 🤖 Bot autoplay | Vuelve el juego más vistoso como pieza de portfolio |
+| 7 | Sistema | 📊 Bot de benchmark | Ayuda a balancear sin depender solo de intuición |
+| 8 | Sistema | 🧬 IA evolutiva entrenada | Sería una capa avanzada, cargada ya entrenada |
 
 Posibles mejoras:
 
 * 🛡️ Escudo temporal
-* 🧭 Visualización de trayectorias
 * ✨ Power-ups
+* 🗡️ Ataque del jugador
 * 🔊 Efectos de sonido
 * 📊 Estadísticas de intento
 * 🎚️ Modos de dificultad
 * 📱 Pulido mobile en dispositivos físicos
 * 🎨 Selector de temas
 * 🧪 Sistema de balance por configuración
+* 🎛️ Teclas y colores de poderes definidos desde `powers.json`
 * 🤖 Bot que juegue solo
 * 🧬 IA evolutiva ya entrenada
 
