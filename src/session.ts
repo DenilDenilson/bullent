@@ -37,6 +37,21 @@ import {
 } from "./pickups.ts";
 import { cloneLevel } from "./utils.ts";
 
+const pickupEffectLifetime = 0.7;
+const dashEffectLifetime = 0.26;
+
+export type PickupCollectEffect = {
+  pos: Vec2;
+  value: number;
+  age: number;
+};
+
+export type DashEffect = {
+  from: Vec2;
+  to: Vec2;
+  age: number;
+};
+
 export type GameSession = {
   level: LevelConfig;
   powers: PowersConfig;
@@ -49,6 +64,8 @@ export type GameSession = {
   presagioSegments: PresagioSegment[];
   timePickup: TimePickup;
   bonusTime: number;
+  pickupCollectEffects: PickupCollectEffect[];
+  dashEffects: DashEffect[];
   elapsed: number;
   lastDirection: Vec2;
   playerTrail: LetargoTrailPoint[];
@@ -80,6 +97,8 @@ export function createGameSession(args: {
     presagioSegments: [],
     timePickup: createTimePickup(level, player),
     bonusTime: 0,
+    pickupCollectEffects: [],
+    dashEffects: [],
     elapsed: 0,
     lastDirection: { x: 0, y: -1 },
     playerTrail: [],
@@ -109,6 +128,8 @@ export function resetGameSession(
   session.presagioSegments = [];
   session.timePickup = createTimePickup(session.level, session.player);
   session.bonusTime = 0;
+  session.pickupCollectEffects = [];
+  session.dashEffects = [];
   session.elapsed = 0;
   session.lastDirection = { x: 0, y: -1 };
   session.playerTrail = [];
@@ -120,12 +141,20 @@ export function dashGameSession(session: GameSession, direction: Vec2): void {
     return;
   }
 
+  const from = { ...session.player.pos };
+
   session.player = applyDestello(
     session.player,
     activeDashDirection(session, direction),
     session.level,
     session.powers.destello,
   );
+
+  session.dashEffects.push({
+    from,
+    to: { ...session.player.pos },
+    age: 0,
+  });
 }
 
 export function activatePresagioGameSession(session: GameSession): void {
@@ -182,6 +211,7 @@ export function updateGameSession(
 
   const collectedTimePickup = collectSessionTimePickup(session);
 
+  updateSessionEffects(session, args.rawDt);
   updateSessionTrail(session, args.rawDt);
   updateSessionShooters(session, dt);
   updateSessionBullets(session, dt);
@@ -203,9 +233,24 @@ function collectSessionTimePickup(session: GameSession): boolean {
   }
 
   session.bonusTime += session.timePickup.value;
+  session.pickupCollectEffects.push({
+    pos: { ...session.timePickup.pos },
+    value: session.timePickup.value,
+    age: 0,
+  });
   session.timePickup = createTimePickup(session.level, session.player);
 
   return true;
+}
+
+function updateSessionEffects(session: GameSession, rawDt: number): void {
+  session.pickupCollectEffects = session.pickupCollectEffects
+    .map((effect) => ({ ...effect, age: effect.age + rawDt }))
+    .filter((effect) => effect.age < pickupEffectLifetime);
+
+  session.dashEffects = session.dashEffects
+    .map((effect) => ({ ...effect, age: effect.age + rawDt }))
+    .filter((effect) => effect.age < dashEffectLifetime);
 }
 
 function updateSessionTrail(session: GameSession, rawDt: number): void {

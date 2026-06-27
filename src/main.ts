@@ -194,6 +194,8 @@ function render(): void {
     playerTrail: session?.playerTrail ?? [],
     presagioSegments: session?.presagioSegments ?? [],
     timePickup: session?.timePickup ?? null,
+    pickupCollectEffects: session?.pickupCollectEffects ?? [],
+    dashEffects: session?.dashEffects ?? [],
     trailLifetime:
       loadError || !session ? 1 : session.powers.letargo.visual.trailLifetime,
     elapsed: session ? getSessionScoreTime(session) : 0,

@@ -10,6 +10,7 @@ import type { PageMode } from "./mode.ts";
 import type { TimePickup } from "./pickups.ts";
 import type { LetargoTrailPoint } from "./powers/letargo.ts";
 import type { PresagioSegment } from "./powers/presagio.ts";
+import type { DashEffect, PickupCollectEffect } from "./session.ts";
 import { formatTime } from "./utils.ts";
 
 export type ResizeGameCanvasArgs = {
@@ -31,6 +32,8 @@ export type RenderGameArgs = {
   playerTrail: LetargoTrailPoint[];
   presagioSegments: PresagioSegment[];
   timePickup: TimePickup | null;
+  pickupCollectEffects: PickupCollectEffect[];
+  dashEffects: DashEffect[];
   trailLifetime: number;
   elapsed: number;
   bestTime: number;
@@ -98,6 +101,8 @@ export function renderGame(args: RenderGameArgs): void {
     playerTrail,
     presagioSegments,
     timePickup,
+    pickupCollectEffects,
+    dashEffects,
     trailLifetime,
     elapsed,
     bestTime,
@@ -137,12 +142,14 @@ export function renderGame(args: RenderGameArgs): void {
   }
 
   for (const shooter of shooters) {
-    drawCircle(ctx, shooter.pos, 12, "#f97316", "#fb923c");
+    drawShooter(ctx, shooter, player.pos);
   }
 
   drawTimePickup(ctx, timePickup, elapsed);
+  drawPickupCollectEffects(ctx, pickupCollectEffects);
 
   drawPlayerTrail(ctx, playerTrail, trailLifetime);
+  drawDashEffects(ctx, dashEffects);
   drawCircle(ctx, player.pos, player.radius, "#a78bfa", "#c4b5fd");
 
   drawPresagioSegments(ctx, presagioSegments);
@@ -180,6 +187,92 @@ function drawCircle(
   ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
   ctx.fill();
   ctx.restore();
+}
+
+function drawShooter(
+  ctx: CanvasRenderingContext2D,
+  shooter: Shooter,
+  target: Vec2,
+): void {
+  const angle = Math.atan2(target.y - shooter.pos.y, target.x - shooter.pos.x);
+  const size = 15;
+
+  ctx.save();
+  ctx.translate(shooter.pos.x, shooter.pos.y);
+  ctx.rotate(angle);
+  ctx.shadowBlur = 18;
+  ctx.shadowColor = "#fb923c";
+  ctx.fillStyle = "#f97316";
+  ctx.strokeStyle = "#fed7aa";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(size, 0);
+  ctx.lineTo(-size * 0.72, -size * 0.74);
+  ctx.lineTo(-size * 0.42, 0);
+  ctx.lineTo(-size * 0.72, size * 0.74);
+  ctx.closePath();
+  ctx.fill();
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawDashEffects(
+  ctx: CanvasRenderingContext2D,
+  effects: DashEffect[],
+): void {
+  for (const effect of effects) {
+    const progress = Math.min(1, effect.age / 0.26);
+    const alpha = Math.max(0, 1 - progress);
+
+    ctx.save();
+    ctx.globalAlpha = alpha * 0.85;
+    ctx.lineWidth = 7 * (1 - progress) + 1.5;
+    ctx.strokeStyle = "#c4b5fd";
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = "#a78bfa";
+    ctx.beginPath();
+    ctx.moveTo(effect.from.x, effect.from.y);
+    ctx.lineTo(effect.to.x, effect.to.y);
+    ctx.stroke();
+
+    ctx.lineWidth = 2;
+    ctx.strokeStyle = "#f5f3ff";
+    ctx.beginPath();
+    ctx.arc(effect.to.x, effect.to.y, 12 + progress * 22, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawPickupCollectEffects(
+  ctx: CanvasRenderingContext2D,
+  effects: PickupCollectEffect[],
+): void {
+  for (const effect of effects) {
+    const progress = Math.min(1, effect.age / 0.7);
+    const alpha = Math.max(0, 1 - progress);
+
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.shadowBlur = 28;
+    ctx.shadowColor = "#facc15";
+    ctx.strokeStyle = "#fde68a";
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(effect.pos.x, effect.pos.y, 14 + progress * 30, 0, Math.PI * 2);
+    ctx.stroke();
+
+    ctx.fillStyle = "#fef3c7";
+    ctx.font = "800 15px Inter, ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.fillText(
+      `+${effect.value}s`,
+      effect.pos.x,
+      effect.pos.y - 20 - progress * 26,
+    );
+    ctx.restore();
+  }
 }
 
 function drawPlayerTrail(

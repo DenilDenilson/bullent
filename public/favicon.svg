@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-label="Bullent favicon">
+  <defs>
+    <radialGradient id="bg" cx="32%" cy="24%" r="76%">
+      <stop offset="0%" stop-color="#5eead4" />
+      <stop offset="44%" stop-color="#0f766e" />
+      <stop offset="100%" stop-color="#020617" />
+    </radialGradient>
+    <linearGradient id="gem" x1="18" y1="12" x2="50" y2="54">
+      <stop offset="0%" stop-color="#fef9c3" />
+      <stop offset="58%" stop-color="#facc15" />
+      <stop offset="100%" stop-color="#f97316" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="14" fill="url(#bg)" />
+  <path d="M32 9 53 30 32 55 11 30Z" fill="url(#gem)" stroke="#ecfeff" stroke-width="3" />
+  <path d="M32 9v46M11 30h42" stroke="#fff7ed" stroke-width="2" opacity="0.62" />
+  <circle cx="22" cy="20" r="5" fill="#ffffff" opacity="0.55" />
+  <circle cx="50" cy="14" r="4" fill="#67e8f9" opacity="0.9" />
+  <circle cx="13" cy="49" r="3" fill="#a78bfa" opacity="0.95" />
+</svg>
