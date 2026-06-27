@@ -19,6 +19,7 @@ import {
 import { loadBestTime, saveBestTime } from "./storage.ts";
 import { cloneLevel, numberValue } from "./utils.ts";
 import { loadFirstLevel, loadPowersConfig } from "./loaders.ts";
+import { createSoundManager } from "./sound.ts";
 // S E S S I O N
 import {
   activatePresagioGameSession,
@@ -84,6 +85,7 @@ const {
   touchDestelloButton,
   touchPresagioButton,
   settingsToggle,
+  soundToggle,
   settingsPanel,
   settingsClose,
   addShooterButton,
@@ -116,8 +118,10 @@ const replayFreezeSeconds = 0.55;
 
 let deathReplayStartedAt: number | null = null;
 let deathScreenReadyAt: number | null = null;
+let replayImpactPlayed = false;
 
 const autoplayBot = createAutoplayBot();
+const sound = createSoundManager();
 let controlMode: ControlMode = "human";
 
 const emptyBotInput: BotInput = {
@@ -222,6 +226,14 @@ function isDeathScreenReady(): boolean {
   return deathScreenReadyAt === null || performance.now() >= deathScreenReadyAt;
 }
 
+function syncSoundToggle(): void {
+  const enabled = sound.isEnabled();
+  soundToggle.textContent = enabled ? "🔊" : "🔇";
+  soundToggle.title = enabled ? "Sonido activado" : "Sonido desactivado";
+  soundToggle.setAttribute("aria-label", soundToggle.title);
+  soundToggle.setAttribute("aria-pressed", String(enabled));
+}
+
 function resizeCanvas(): void {
   resizeGameCanvas({
     canvas: gameCanvas,
@@ -266,6 +278,12 @@ function activeReplayView(): ReplayView | null {
   }
 
   const frozen = freezeElapsed >= 0;
+
+  if (frozen && !replayImpactPlayed) {
+    sound.playReplayImpact();
+    replayImpactPlayed = true;
+  }
+
   const rawProgress = frozen ? 1 : clamp01(actionElapsed / playbackDuration);
   const replayProgress = frozen ? 1 : easeOutCubic(rawProgress);
   const targetTime = first.time + sourceDuration * replayProgress;
@@ -452,6 +470,8 @@ function applyLevel(nextLevel: LevelConfig): void {
   setSessionLevel(session, nextLevel, "ready");
   deathReplayStartedAt = null;
   deathScreenReadyAt = null;
+  replayImpactPlayed = false;
+  sound.setLetargoActive(false);
   resizeCanvas();
   render();
   syncDeathScreen();
@@ -468,8 +488,11 @@ function startOrRestart(nextControlMode: ControlMode = controlMode): void {
     return;
   }
 
+  sound.unlock();
   deathReplayStartedAt = null;
   deathScreenReadyAt = null;
+  replayImpactPlayed = false;
+  sound.setLetargoActive(false);
   controlMode = nextControlMode;
   autoplayBot.reset();
   resetGameSession(session, "running");
@@ -485,6 +508,8 @@ function returnToStartScreen(): void {
 
   deathReplayStartedAt = null;
   deathScreenReadyAt = null;
+  replayImpactPlayed = false;
+  sound.setLetargoActive(false);
   controlMode = "human";
   autoplayBot.reset();
   resetGameSession(session, "ready");
@@ -503,6 +528,9 @@ function startDeathReplay(): void {
   }
 
   deathReplayStartedAt = performance.now();
+  replayImpactPlayed = false;
+  sound.setLetargoActive(false);
+  sound.playReplayStart();
   syncDeathScreen();
 }
 
@@ -519,21 +547,30 @@ function inputDirection(botInput: BotInput = emptyBotInput): Vec2 {
 }
 
 function dashPlayer(): void {
-  if (!session) {
+  if (!session || session.state !== "running") {
     return;
   }
 
   dashGameSession(session, inputDirection());
+  sound.playDash();
 }
 
 function activatePresagioPower(): void {
-  if (!session) return;
+  if (
+    !session ||
+    session.state !== "running" ||
+    session.presagio.cooldownRemaining > 0
+  ) {
+    return;
+  }
 
   activatePresagioGameSession(session);
+  sound.playPresagio();
 }
 
 function update(rawDt: number): void {
   if (!session) {
+    sound.setLetargoActive(false);
     return;
   }
 
@@ -544,10 +581,12 @@ function update(rawDt: number): void {
 
   if (botInput.usePresagio) {
     activatePresagioGameSession(session);
+    sound.playPresagio();
   }
 
   if (botInput.useDash) {
     dashGameSession(session, botInput.direction);
+    sound.playDash();
   }
 
   const result = updateGameSession(session, {
@@ -559,11 +598,20 @@ function update(rawDt: number): void {
         : keyboardInput.isPressed("control") || touchInput.isSlowHeld(),
   });
 
+  if (result.collectedTimePickup) {
+    sound.playPickup();
+  }
+
   if (result.died) {
+    sound.playDeath();
+    sound.setLetargoActive(false);
     bestTime = saveBestTime(bestTime, getSessionScoreTime(session));
     deathScreenReadyAt = performance.now() + deathScreenDelayMs;
     syncTouchControls();
+    return;
   }
+
+  sound.setLetargoActive(session.state === "running" && session.letargo.active);
 }
 
 function frame(now: number): void {
@@ -697,6 +745,14 @@ deathStartCta.addEventListener("click", (event: any) => {
   returnToStartScreen();
 });
 
+soundToggle.addEventListener("click", (event: any) => {
+  event.stopPropagation();
+  sound.setEnabled(!sound.isEnabled());
+  sound.playToggle();
+  syncSoundToggle();
+  gameCanvas.focus();
+});
+
 settingsToggle.addEventListener("click", openSettings);
 settingsClose.addEventListener("click", closeSettings);
 cancelSettingsButton.addEventListener("click", closeSettings);
@@ -793,6 +849,7 @@ async function init(): Promise<void> {
     syncSettingsVisibility();
     syncStartScreen();
     syncDeathScreen();
+    syncSoundToggle();
     syncMobileHud();
 
     return;
@@ -804,6 +861,7 @@ async function init(): Promise<void> {
   syncSettingsVisibility();
   syncStartScreen();
   syncDeathScreen();
+  syncSoundToggle();
   syncSlowPowerUi();
   syncPresagioPower();
   syncMobileHud();

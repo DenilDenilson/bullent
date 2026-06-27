@@ -108,6 +108,14 @@
     @apply absolute bottom-3 right-3 z-50 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-xl text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
   }
 
+  #sound-toggle {
+    @apply absolute bottom-3 right-14 z-50 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-base text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
+  }
+
+  #sound-toggle[aria-pressed="false"] {
+    @apply border-slate-400/20 text-slate-400;
+  }
+
   #powers-bar {
     @apply absolute bottom-3 left-3 z-20 flex gap-2;
   }
@@ -708,6 +716,10 @@
 
   body.mode-mobile #settings-toggle {
     @apply top-3 right-3 bottom-auto h-8 w-8 text-lg;
+  }
+
+  body.mode-mobile #sound-toggle {
+    @apply top-3 right-14 bottom-auto h-8 w-8 text-sm;
   }
 
   body.mode-mobile #powers-bar {

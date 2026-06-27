@@ -119,6 +119,10 @@ export function getDom() {
       document.querySelector<HTMLButtonElement>("#settings-toggle"),
       "Missing #settings-toggle",
     ),
+    soundToggle: requireValue(
+      document.querySelector<HTMLButtonElement>("#sound-toggle"),
+      "Missing #sound-toggle",
+    ),
     settingsPanel: requireValue(
       document.querySelector<HTMLFormElement>("#settings-panel"),
       "Missing #settings-panel",
