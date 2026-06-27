@@ -267,7 +267,7 @@ function startOrRestart(nextControlMode: ControlMode = "human"): void {
   }
 
   controlMode = nextControlMode;
-  autoplayBot.reset()
+  autoplayBot.reset();
   resetGameSession(session, "running");
   syncStartScreen();
   syncTouchControls();

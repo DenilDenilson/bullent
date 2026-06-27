@@ -1,4 +1,9 @@
-import { circlesTouch, type LevelConfig, type Player, type Vec2 } from "./core.ts";
+import {
+  circlesTouch,
+  type LevelConfig,
+  type Player,
+  type Vec2,
+} from "./core.ts";
 
 export const TIME_PICKUP_BONUS_SECONDS = 15;
 const timePickupRadius = 13;
@@ -56,11 +61,7 @@ function randomTimePickup(
   };
 }
 
-function randomBetween(
-  min: number,
-  max: number,
-  random: () => number,
-): number {
+function randomBetween(min: number, max: number, random: () => number): number {
   return min + (max - min) * random();
 }
 

@@ -323,7 +323,12 @@ function drawTimePickup(
   ctx.strokeStyle = "#fef9c3";
   ctx.lineWidth = 2;
   ctx.beginPath();
-  ctx.rect(-pickup.radius, -pickup.radius, pickup.radius * 2, pickup.radius * 2);
+  ctx.rect(
+    -pickup.radius,
+    -pickup.radius,
+    pickup.radius * 2,
+    pickup.radius * 2,
+  );
   ctx.fill();
   ctx.stroke();
   ctx.restore();

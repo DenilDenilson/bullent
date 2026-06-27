@@ -142,13 +142,17 @@ function scoreDirection(session: BotThinkSession, direction: Vec2): number {
   const danger = directionDanger(session, direction);
 
   return (
-    scorePickupDirection(session, direction) * pickupWeightFor(session, danger) -
+    scorePickupDirection(session, direction) *
+      pickupWeightFor(session, danger) -
     danger * bulletDangerWeight +
     scoreWallSafety(session, direction)
   );
 }
 
-function scorePickupDirection(session: BotThinkSession, direction: Vec2): number {
+function scorePickupDirection(
+  session: BotThinkSession,
+  direction: Vec2,
+): number {
   const desiredDirection = directionTo(
     session.player.pos,
     session.timePickup.pos,
@@ -193,7 +197,12 @@ function directionDanger(session: BotThinkSession, direction: Vec2): number {
 }
 
 function scoreWallSafety(session: BotThinkSession, direction: Vec2): number {
-  const futurePlayer = movePlayer(session.player, direction, 0.36, session.level);
+  const futurePlayer = movePlayer(
+    session.player,
+    direction,
+    0.36,
+    session.level,
+  );
 
   const wallDistance = Math.min(
     futurePlayer.pos.x - session.player.radius,
