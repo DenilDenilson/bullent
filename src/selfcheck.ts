@@ -271,4 +271,30 @@ botSession.bullets = [
 const dangerAwareBotDirection = chooseBotDirection(botSession);
 assert.notEqual(dangerAwareBotDirection.x, 1);
 
+
+const deathSession = createGameSession({
+  level: DEFAULT_LEVEL,
+  powers,
+  state: "running",
+});
+
+deathSession.bullets = [
+  {
+    pos: { ...deathSession.player.pos },
+    vel: { x: 0, y: 0 },
+    radius: DEFAULT_LEVEL.bullets.radius,
+  },
+];
+
+const deathResult = updateGameSession(deathSession, {
+  rawDt: 1 / 60,
+  direction: { x: 0, y: 0 },
+  slowHeld: false,
+});
+
+assert.equal(deathResult.died, true);
+assert.ok(deathSession.killingBullet);
+assert.ok(deathSession.replayFrames.length > 0);
+assert.ok(deathSession.deathReplayFrames.length > 0);
+
 console.log(":) selfcheck passed!");

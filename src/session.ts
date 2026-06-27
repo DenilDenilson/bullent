@@ -39,6 +39,7 @@ import { cloneLevel } from "./utils.ts";
 
 const pickupEffectLifetime = 0.7;
 const dashEffectLifetime = 0.26;
+const replayWindowSeconds = 2.5;
 
 export type PickupCollectEffect = {
   pos: Vec2;
@@ -50,6 +51,13 @@ export type DashEffect = {
   from: Vec2;
   to: Vec2;
   age: number;
+};
+
+export type ReplayFrame = {
+  time: number;
+  player: Player;
+  bullets: Bullet[];
+  timePickup: TimePickup | null;
 };
 
 export type GameSession = {
@@ -70,6 +78,10 @@ export type GameSession = {
   lastDirection: Vec2;
   playerTrail: LetargoTrailPoint[];
   playerTrailClock: number;
+  killingBullet: Bullet | null;
+  replayClock: number;
+  replayFrames: ReplayFrame[];
+  deathReplayFrames: ReplayFrame[];
 };
 
 export type GameSessionUpdateResult = {
@@ -103,6 +115,10 @@ export function createGameSession(args: {
     lastDirection: { x: 0, y: -1 },
     playerTrail: [],
     playerTrailClock: 0,
+    killingBullet: null,
+    replayClock: 0,
+    replayFrames: [],
+    deathReplayFrames: [],
   };
 }
 
@@ -134,6 +150,10 @@ export function resetGameSession(
   session.lastDirection = { x: 0, y: -1 };
   session.playerTrail = [];
   session.playerTrailClock = 0;
+  session.killingBullet = null;
+  session.replayClock = 0;
+  session.replayFrames = [];
+  session.deathReplayFrames = [];
 }
 
 export function dashGameSession(session: GameSession, direction: Vec2): void {
@@ -218,13 +238,37 @@ export function updateGameSession(
   session.presagioSegments = isPresagioActive(session.presagio)
     ? computePresagioSegments(session.bullets, session.level)
     : [];
+  recordSessionReplayFrame(session, args.rawDt);
 
-  if (session.bullets.some((bullet) => circlesTouch(session.player, bullet))) {
+  const killingBullet = session.bullets.find((bullet) =>
+    circlesTouch(session.player, bullet),
+  );
+
+  if (killingBullet) {
+    session.killingBullet = cloneBullet(killingBullet);
+    session.deathReplayFrames = session.replayFrames.map(cloneReplayFrame);
     session.state = "dead";
     return { died: true, collectedTimePickup };
   }
 
   return { died: false, collectedTimePickup };
+}
+
+function recordSessionReplayFrame(session: GameSession, rawDt: number): void {
+  session.replayClock += rawDt;
+  session.replayFrames.push(
+    cloneReplayFrame({
+      time: session.replayClock,
+      player: session.player,
+      bullets: session.bullets,
+      timePickup: session.timePickup,
+    }),
+  );
+
+  const oldestAllowed = session.replayClock - replayWindowSeconds;
+  session.replayFrames = session.replayFrames.filter(
+    (frame) => frame.time >= oldestAllowed,
+  );
 }
 
 function collectSessionTimePickup(session: GameSession): boolean {
@@ -300,4 +344,33 @@ function activeDashDirection(session: GameSession, direction: Vec2): Vec2 {
 
 function isMoving(direction: Vec2): boolean {
   return direction.x !== 0 || direction.y !== 0;
+}
+
+function cloneReplayFrame(frame: ReplayFrame): ReplayFrame {
+  return {
+    time: frame.time,
+    player: clonePlayer(frame.player),
+    bullets: frame.bullets.map(cloneBullet),
+    timePickup: frame.timePickup
+      ? {
+          ...frame.timePickup,
+          pos: { ...frame.timePickup.pos },
+        }
+      : null,
+  };
+}
+
+function clonePlayer(player: Player): Player {
+  return {
+    ...player,
+    pos: { ...player.pos },
+  };
+}
+
+function cloneBullet(bullet: Bullet): Bullet {
+  return {
+    ...bullet,
+    pos: { ...bullet.pos },
+    vel: { ...bullet.vel },
+  };
 }

@@ -37,6 +37,7 @@ export type RenderGameArgs = {
   trailLifetime: number;
   elapsed: number;
   bestTime: number;
+  killingBullet: Bullet | null;
   loadError: string;
 };
 
@@ -106,6 +107,7 @@ export function renderGame(args: RenderGameArgs): void {
     trailLifetime,
     elapsed,
     bestTime,
+    killingBullet,
     loadError,
   } = args;
 
@@ -158,10 +160,17 @@ export function renderGame(args: RenderGameArgs): void {
     drawCircle(ctx, bullet.pos, bullet.radius, "#22d3ee", "#67e8f9");
   }
 
+  if (state === "running" && killingBullet) {
+    drawKillingBulletMarker(ctx, killingBullet);
+  }
+
   if (state !== "running") {
     ctx.fillStyle = "rgb(2 6 23 / 0.58)";
     ctx.fillRect(0, 0, level.arena.width, level.arena.height);
     drawCircle(ctx, player.pos, player.radius, "#a78bfa", "#c4b5fd");
+    if (killingBullet) {
+      drawKillingBulletMarker(ctx, killingBullet);
+    }
     drawText(ctx, {
       level,
       state,
@@ -186,6 +195,25 @@ function drawCircle(
   ctx.beginPath();
   ctx.arc(pos.x, pos.y, radius, 0, Math.PI * 2);
   ctx.fill();
+  ctx.restore();
+}
+
+function drawKillingBulletMarker(ctx: CanvasRenderingContext2D, bullet: Bullet): void {
+  ctx.save();
+  ctx.shadowBlur = 26;
+  ctx.shadowColor = "#f43f5e";
+  ctx.strokeStyle = "#fecdd3";
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.arc(bullet.pos.x, bullet.pos.y, bullet.radius + 9, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = "rgb(244 63 94 / 0.72)";
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(bullet.pos.x, bullet.pos.y, bullet.radius + 15, 0, Math.PI * 2);
+  ctx.stroke();
   ctx.restore();
 }
 

@@ -29,6 +29,7 @@ import {
   setSessionLevel,
   updateGameSession,
   type GameSession,
+  type ReplayFrame,
 } from "./session.ts";
 // R E N D E R I Z A D O  C A N V A S
 import { renderGame, resizeGameCanvas } from "./renderer.ts";
@@ -43,6 +44,7 @@ import { createKeyboardInput } from "./input/keyboard.ts";
 import { createTouchInput } from "./input/touch.ts";
 // UI
 import {
+  syncDeathScreen as syncDeathScreenUi,
   syncLetargoPowerUi,
   syncPresagioPowerUi,
   syncMobileHud as syncMobileHudUi,
@@ -67,6 +69,12 @@ const {
   startScreen,
   startCta,
   startBotCta,
+  deathScreen,
+  deathRestartCta,
+  deathHumanCta,
+  deathBotCta,
+  deathReplayCta,
+  deathStartCta,
   touchControls,
   touchJoystickZone,
   touchJoystickBase,
@@ -97,6 +105,7 @@ let loadError = "";
 let settingsOpen = false;
 
 type ControlMode = "human" | "bot";
+let deathReplayStartedAt: number | null = null;
 
 const autoplayBot = createAutoplayBot();
 let controlMode: ControlMode = "human";
@@ -185,6 +194,16 @@ function syncStartScreen(): void {
   });
 }
 
+function syncDeathScreen(): void {
+  syncDeathScreenUi({
+    deathScreen,
+    loadError,
+    settingsOpen,
+    state: currentState(),
+    replaying: deathReplayStartedAt !== null,
+  });
+}
+
 function resizeCanvas(): void {
   resizeGameCanvas({
     canvas: gameCanvas,
@@ -195,26 +214,60 @@ function resizeCanvas(): void {
   });
 }
 
+function activeReplayFrame(): ReplayFrame | null {
+  if (!session || deathReplayStartedAt === null) {
+    return null;
+  }
+
+  const frames = session.deathReplayFrames;
+  const first = frames[0];
+  const last = frames[frames.length - 1];
+
+  if (!first || !last) {
+    deathReplayStartedAt = null;
+    return null;
+  }
+
+  const elapsed = (performance.now() - deathReplayStartedAt) / 1000;
+  const duration = Math.max(0.35, last.time - first.time);
+
+  if (elapsed >= duration) {
+    deathReplayStartedAt = null;
+    return null;
+  }
+
+  const targetTime = first.time + elapsed;
+
+  return frames.find((frame) => frame.time >= targetTime) ?? last;
+}
+
 function render(): void {
   const level = currentLevel();
+  const replayFrame = activeReplayFrame();
+  const replaying = replayFrame !== null;
+  const lastReplayFrame = session?.deathReplayFrames.at(-1) ?? null;
 
   renderGame({
     ctx,
     level,
     mode,
-    state: session?.state ?? "ready",
-    player: session?.player ?? createPlayer(level),
+    state: replaying ? "running" : (session?.state ?? "ready"),
+    player: replayFrame?.player ?? session?.player ?? createPlayer(level),
     shooters: session?.shooters ?? createShooters(level),
-    bullets: session?.bullets ?? [],
+    bullets: replayFrame?.bullets ?? session?.bullets ?? [],
     playerTrail: session?.playerTrail ?? [],
     presagioSegments: session?.presagioSegments ?? [],
-    timePickup: session?.timePickup ?? null,
+    timePickup: replayFrame?.timePickup ?? session?.timePickup ?? null,
     pickupCollectEffects: session?.pickupCollectEffects ?? [],
     dashEffects: session?.dashEffects ?? [],
     trailLifetime:
       loadError || !session ? 1 : session.powers.letargo.visual.trailLifetime,
     elapsed: session ? getSessionScoreTime(session) : 0,
     bestTime,
+    killingBullet:
+      !replaying || replayFrame === lastReplayFrame
+        ? (session?.killingBullet ?? null)
+        : null,
     loadError,
   });
 }
@@ -238,6 +291,7 @@ function openSettings(): void {
   settingsPanel.hidden = false;
   settingsToggle.hidden = true;
   syncStartScreen();
+  syncDeathScreen();
   syncTouchControls();
   inputs.name.focus();
 }
@@ -247,6 +301,7 @@ function closeSettings(): void {
   settingsPanel.hidden = true;
   syncSettingsVisibility();
   syncStartScreen();
+  syncDeathScreen();
   syncTouchControls();
   gameCanvas.focus();
 }
@@ -257,20 +312,51 @@ function applyLevel(nextLevel: LevelConfig): void {
   }
 
   setSessionLevel(session, nextLevel, "ready");
+  deathReplayStartedAt = null;
   resizeCanvas();
   render();
+  syncDeathScreen();
 }
 
-function startOrRestart(nextControlMode: ControlMode = "human"): void {
+function startOrRestart(nextControlMode: ControlMode = controlMode): void {
   if (!session || loadError || settingsOpen || session.state === "running") {
     return;
   }
 
+  deathReplayStartedAt = null;
   controlMode = nextControlMode;
   autoplayBot.reset();
   resetGameSession(session, "running");
   syncStartScreen();
+  syncDeathScreen();
   syncTouchControls();
+}
+
+function returnToStartScreen(): void {
+  if (!session || loadError || settingsOpen) {
+    return;
+  }
+
+  deathReplayStartedAt = null;
+  controlMode = "human";
+  autoplayBot.reset();
+  resetGameSession(session, "ready");
+  syncStartScreen();
+  syncDeathScreen();
+  syncTouchControls();
+}
+
+function startDeathReplay(): void {
+  if (
+    !session ||
+    session.state !== "dead" ||
+    session.deathReplayFrames.length === 0
+  ) {
+    return;
+  }
+
+  deathReplayStartedAt = performance.now();
+  syncDeathScreen();
 }
 
 function inputDirection(botInput: BotInput = emptyBotInput): Vec2 {
@@ -339,6 +425,7 @@ function frame(now: number): void {
   render();
   syncSettingsVisibility();
   syncStartScreen();
+  syncDeathScreen();
   syncSlowPowerUi();
   syncPresagioPower();
   syncMobileHud();
@@ -365,7 +452,7 @@ const keyboardInput = createKeyboardInput({
   },
 
   onStart: () => {
-    startOrRestart("human");
+    startOrRestart();
   },
 });
 
@@ -413,7 +500,7 @@ gameCanvas.addEventListener("pointerdown", () => {
     return;
   }
   gameCanvas.focus();
-  startOrRestart("human");
+  startOrRestart();
 });
 
 startCta.addEventListener("click", (event: any) => {
@@ -430,6 +517,36 @@ startBotCta.addEventListener("click", (event: any) => {
   event.stopPropagation();
   gameCanvas.focus();
   startOrRestart("bot");
+});
+
+deathRestartCta.addEventListener("click", (event: any) => {
+  event.stopPropagation();
+  gameCanvas.focus();
+  startOrRestart();
+});
+
+deathHumanCta.addEventListener("click", (event: any) => {
+  event.stopPropagation();
+  gameCanvas.focus();
+  startOrRestart("human");
+});
+
+deathBotCta.addEventListener("click", (event: any) => {
+  event.stopPropagation();
+  gameCanvas.focus();
+  startOrRestart("bot");
+});
+
+deathReplayCta.addEventListener("click", (event: any) => {
+  event.stopPropagation();
+  gameCanvas.focus();
+  startDeathReplay();
+});
+
+deathStartCta.addEventListener("click", (event: any) => {
+  event.stopPropagation();
+  gameCanvas.focus();
+  returnToStartScreen();
 });
 
 settingsToggle.addEventListener("click", openSettings);
@@ -527,6 +644,7 @@ async function init(): Promise<void> {
     render();
     syncSettingsVisibility();
     syncStartScreen();
+    syncDeathScreen();
     syncMobileHud();
 
     return;
@@ -537,6 +655,7 @@ async function init(): Promise<void> {
   render();
   syncSettingsVisibility();
   syncStartScreen();
+  syncDeathScreen();
   syncSlowPowerUi();
   syncPresagioPower();
   syncMobileHud();

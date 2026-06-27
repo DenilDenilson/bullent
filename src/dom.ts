@@ -59,6 +59,30 @@ export function getDom() {
       document.querySelector<HTMLButtonElement>("#start-bot-cta"),
       "Missing #start-bot-cta",
     ),
+    deathScreen: requireValue(
+      document.querySelector<HTMLElement>("#death-screen"),
+      "Missing #death-screen",
+    ),
+    deathRestartCta: requireValue(
+      document.querySelector<HTMLButtonElement>("#death-restart-cta"),
+      "Missing #death-restart-cta",
+    ),
+    deathHumanCta: requireValue(
+      document.querySelector<HTMLButtonElement>("#death-human-cta"),
+      "Missing #death-human-cta",
+    ),
+    deathBotCta: requireValue(
+      document.querySelector<HTMLButtonElement>("#death-bot-cta"),
+      "Missing #death-bot-cta",
+    ),
+    deathReplayCta: requireValue(
+      document.querySelector<HTMLButtonElement>("#death-replay-cta"),
+      "Missing #death-replay-cta",
+    ),
+    deathStartCta: requireValue(
+      document.querySelector<HTMLButtonElement>("#death-start-cta"),
+      "Missing #death-start-cta",
+    ),
     touchControls: requireValue(
       document.querySelector<HTMLElement>("#touch-controls"),
       "Missing #touch-controls",

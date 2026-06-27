@@ -145,3 +145,20 @@ export function syncStartScreen(args: {
   startScreen.hidden = !showStart;
   powersBar.hidden = showStart;
 }
+
+export function syncDeathScreen(args: {
+  deathScreen: HTMLElement;
+  loadError: string;
+  settingsOpen: boolean;
+  state: GameState;
+  replaying: boolean;
+}): void {
+  const { deathScreen, loadError, settingsOpen, state, replaying } = args;
+
+  deathScreen.hidden = !(
+    !loadError &&
+    !settingsOpen &&
+    state === "dead" &&
+    !replaying
+  );
+}
