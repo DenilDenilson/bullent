@@ -7,3 +7,4 @@ TODO:
 - Una manera de cambiar entre bot y persona in game
 - DOCUMENTAR! PROCESOS DE CÓMO AÑADIR PODERES QUE SINO NOS MAREAMOS ACÁ
 - Scripts para que el bot juegue muchas partidas con la idea de obtener los pesos ideales
+- Quitar el zoom del replay - Mnnnn evaluar más tiempo aún

@@ -40,6 +40,7 @@ export function createTouchInput(args: {
   let touchDirection: Vec2 = { x: 0, y: 0 };
   let touchSlowHeld = false;
   let joystickPointerId: number | null = null;
+  let joystickOrigin: Vec2 | null = null;
   let letargoPointerId: number | null = null;
 
   function focusAndStart(): void {
@@ -48,41 +49,66 @@ export function createTouchInput(args: {
   }
 
   function setJoystickFromPointer(event: PointerEvent): void {
-    const rect = elements.joystickZone.getBoundingClientRect();
-    const center = {
-      x: rect.left + rect.width / 2,
-      y: rect.top + rect.height / 2,
-    };
+    if (!joystickOrigin) {
+      return;
+    }
 
-    const dx = event.clientX - center.x;
-    const dy = event.clientY - center.y;
-    const distance = Math.hypot(dx, dy);
-    const limitedDistance = Math.min(distance, config.joystickRadius);
-    const angle = Math.atan2(dy, dx);
+    let dx = event.clientX - joystickOrigin.x;
+    let dy = event.clientY - joystickOrigin.y;
+    let distance = Math.hypot(dx, dy);
 
-    const offset =
-      distance === 0
-        ? { x: 0, y: 0 }
-        : {
-            x: Math.cos(angle) * limitedDistance,
-            y: Math.sin(angle) * limitedDistance,
-          };
+    // ponytail: floating joystick slides only after reaching max radius.
+    if (distance > config.joystickRadius) {
+      const angle = Math.atan2(dy, dx);
+      const offset = {
+        x: Math.cos(angle) * config.joystickRadius,
+        y: Math.sin(angle) * config.joystickRadius,
+      };
 
-    elements.joystickThumb.style.transform = `translate(${offset.x}px, ${offset.y}px)`;
+      joystickOrigin = {
+        x: event.clientX - offset.x,
+        y: event.clientY - offset.y,
+      };
+      dx = offset.x;
+      dy = offset.y;
+      distance = config.joystickRadius;
+    }
+
+    positionJoystickBase();
+
+    elements.joystickThumb.style.transform = `translate(${dx}px, ${dy}px)`;
 
     touchDirection =
       distance < config.joystickDeadZone
         ? { x: 0, y: 0 }
         : {
-            x: offset.x / config.joystickRadius,
-            y: offset.y / config.joystickRadius,
+            x: dx / config.joystickRadius,
+            y: dy / config.joystickRadius,
           };
+  }
+
+  function positionJoystickBase(): void {
+    if (!joystickOrigin) {
+      return;
+    }
+
+    const rect = elements.joystickZone.getBoundingClientRect();
+
+    elements.joystickBase.style.left = `${joystickOrigin.x - rect.left}px`;
+    elements.joystickBase.style.top = `${joystickOrigin.y - rect.top}px`;
+    elements.joystickBase.style.right = "auto";
+    elements.joystickBase.style.transform = "translate(-50%, -50%)";
   }
 
   function resetJoystick(): void {
     joystickPointerId = null;
+    joystickOrigin = null;
     touchDirection = { x: 0, y: 0 };
     elements.joystickBase.classList.remove("is-active");
+    elements.joystickBase.style.left = "";
+    elements.joystickBase.style.top = "";
+    elements.joystickBase.style.right = "";
+    elements.joystickBase.style.transform = "";
     elements.joystickThumb.style.transform = "translate(0, 0)";
   }
 
@@ -109,7 +135,9 @@ export function createTouchInput(args: {
     focusAndStart();
 
     joystickPointerId = event.pointerId;
+    joystickOrigin = { x: event.clientX, y: event.clientY };
     elements.joystickZone.setPointerCapture(event.pointerId);
+    positionJoystickBase();
     elements.joystickBase.classList.add("is-active");
     setJoystickFromPointer(event);
   });

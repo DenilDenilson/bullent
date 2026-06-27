@@ -1,4 +1,4 @@
-import { moveBullet, movePlayer, type Vec2 } from "./core.ts";
+import { circlesTouch, moveBullet, movePlayer, type Vec2 } from "./core.ts";
 import type { GameSession } from "./session.ts";
 
 export type BotInput = {
@@ -64,7 +64,8 @@ export function createAutoplayBot(): AutoplayBot {
       const useDash =
         danger >= dashDangerThreshold &&
         dashCooldownRemaining === 0 &&
-        directionDangerScore < danger * 0.05;
+        directionDangerScore < danger * 0.05 &&
+        botDashSurvives(session, direction);
 
       if (useDash) {
         dashCooldownRemaining = botDashCooldown;
@@ -111,6 +112,25 @@ function dangerNearPlayer(
   }
 
   return danger;
+}
+
+export function botDashSurvives(session: GameSession, direction: Vec2): boolean {
+  const dashDirection = isMoving(direction) ? direction : session.lastDirection;
+  const dashedPlayer = movePlayer(
+    session.player,
+    dashDirection,
+    session.powers.destello.distance / session.player.speed,
+    session.level,
+  );
+
+  if (session.bullets.some((bullet) => circlesTouch(dashedPlayer, bullet))) {
+    return false;
+  }
+
+  // ponytail: sampled landing check only; upgrade to swept dash collision if needed.
+  return (
+    directionDanger({ ...session, player: dashedPlayer }, { x: 0, y: 0 }) === 0
+  );
 }
 
 export function thinkBot(session: GameSession): BotInput {
@@ -218,6 +238,10 @@ function scoreWallSafety(session: BotThinkSession, direction: Vec2): number {
   const closeness = (wallDangerMargin - wallDistance) / wallDangerMargin;
 
   return -closeness * wallDangerWeight;
+}
+
+function isMoving(direction: Vec2): boolean {
+  return direction.x !== 0 || direction.y !== 0;
 }
 
 function directionTo(from: Vec2, to: Vec2): Vec2 {

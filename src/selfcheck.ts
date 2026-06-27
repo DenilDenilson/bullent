@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { chooseBotDirection, thinkBot } from "./bot.ts";
+import { botDashSurvives, chooseBotDirection, thinkBot } from "./bot.ts";
 import {
   DEFAULT_LEVEL,
   circlesTouch,
@@ -270,6 +270,28 @@ botSession.bullets = [
 
 const dangerAwareBotDirection = chooseBotDirection(botSession);
 assert.notEqual(dangerAwareBotDirection.x, 1);
+
+const dashSafetySession = createGameSession({
+  level: DEFAULT_LEVEL,
+  powers,
+  state: "running",
+});
+const unsafeDashDirection = { x: 1, y: 0 };
+const unsafeDashLanding = applyDestello(
+  dashSafetySession.player,
+  unsafeDashDirection,
+  DEFAULT_LEVEL,
+  powers.destello,
+);
+assert.equal(botDashSurvives(dashSafetySession, unsafeDashDirection), true);
+dashSafetySession.bullets = [
+  {
+    pos: { ...unsafeDashLanding.pos },
+    vel: { x: 0, y: 0 },
+    radius: DEFAULT_LEVEL.bullets.radius,
+  },
+];
+assert.equal(botDashSurvives(dashSafetySession, unsafeDashDirection), false);
 
 const deathSession = createGameSession({
   level: DEFAULT_LEVEL,
