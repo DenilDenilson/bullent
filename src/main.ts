@@ -32,7 +32,7 @@ import {
   type ReplayFrame,
 } from "./session.ts";
 // R E N D E R I Z A D O  C A N V A S
-import { renderGame, resizeGameCanvas } from "./renderer.ts";
+import { renderGame, resizeGameCanvas, type ReplayCamera } from "./renderer.ts";
 // S E T T I N G S
 import {
   populateSettingsForm,
@@ -105,7 +105,17 @@ let loadError = "";
 let settingsOpen = false;
 
 type ControlMode = "human" | "bot";
+type ReplayView = {
+  frame: ReplayFrame;
+  camera: ReplayCamera;
+};
+
+const deathScreenDelayMs = 850;
+const replayIntroSeconds = 0.35;
+const replayFreezeSeconds = 0.55;
+
 let deathReplayStartedAt: number | null = null;
+let deathScreenReadyAt: number | null = null;
 
 const autoplayBot = createAutoplayBot();
 let controlMode: ControlMode = "human";
@@ -180,7 +190,10 @@ function syncSettingsVisibility(): void {
     settingsToggle,
     loadError,
     settingsOpen,
-    state: currentState(),
+    state:
+      currentState() === "dead" && !isDeathScreenReady()
+        ? "running"
+        : currentState(),
   });
 }
 
@@ -201,7 +214,12 @@ function syncDeathScreen(): void {
     settingsOpen,
     state: currentState(),
     replaying: deathReplayStartedAt !== null,
+    deathReady: isDeathScreenReady(),
   });
+}
+
+function isDeathScreenReady(): boolean {
+  return deathScreenReadyAt === null || performance.now() >= deathScreenReadyAt;
 }
 
 function resizeCanvas(): void {
@@ -214,7 +232,7 @@ function resizeCanvas(): void {
   });
 }
 
-function activeReplayFrame(): ReplayFrame | null {
+function activeReplayView(): ReplayView | null {
   if (!session || deathReplayStartedAt === null) {
     return null;
   }
@@ -229,45 +247,165 @@ function activeReplayFrame(): ReplayFrame | null {
   }
 
   const elapsed = (performance.now() - deathReplayStartedAt) / 1000;
-  const duration = Math.max(0.35, last.time - first.time);
+  const sourceDuration = Math.max(0.35, last.time - first.time);
 
-  if (elapsed >= duration) {
+  if (elapsed < replayIntroSeconds) {
+    return {
+      frame: first,
+      camera: replayCameraForFrame(first, 0, "REPLAY", 0),
+    };
+  }
+
+  const playbackDuration = sourceDuration * 1.35;
+  const actionElapsed = elapsed - replayIntroSeconds;
+  const freezeElapsed = actionElapsed - playbackDuration;
+
+  if (freezeElapsed >= replayFreezeSeconds) {
     deathReplayStartedAt = null;
     return null;
   }
 
-  const targetTime = first.time + elapsed;
+  const frozen = freezeElapsed >= 0;
+  const rawProgress = frozen ? 1 : clamp01(actionElapsed / playbackDuration);
+  const replayProgress = frozen ? 1 : easeOutCubic(rawProgress);
+  const targetTime = first.time + sourceDuration * replayProgress;
+  const frame = frozen
+    ? last
+    : (frames.find((candidate) => candidate.time >= targetTime) ?? last);
+  const impactProgress = smoothstep(0.58, 1, replayProgress);
+  const flash = frozen
+    ? Math.max(0, 1 - freezeElapsed / replayFreezeSeconds) * 0.26
+    : smoothstep(0.92, 1, replayProgress) * 0.12;
 
-  return frames.find((frame) => frame.time >= targetTime) ?? last;
+  return {
+    frame,
+    camera: replayCameraForFrame(
+      frame,
+      impactProgress,
+      frozen ? "IMPACTO" : null,
+      flash,
+    ),
+  };
+}
+
+function replayCameraForFrame(
+  frame: ReplayFrame,
+  impactProgress: number,
+  label: ReplayCamera["label"],
+  flash: number,
+): ReplayCamera {
+  const level = currentLevel();
+  const zoom = 1 + impactProgress * 0.72;
+  const killingBullet = session?.killingBullet ?? null;
+  const impactBullet = killingBullet
+    ? (closestBullet(frame.bullets, killingBullet) ?? killingBullet)
+    : null;
+  const rawTarget = impactBullet
+    ? midpoint(frame.player.pos, impactBullet.pos)
+    : frame.player.pos;
+
+  return {
+    zoom,
+    target: clampCameraTarget(level, rawTarget, zoom),
+    flash,
+    label,
+  };
+}
+
+function closestBullet(
+  bullets: ReplayFrame["bullets"],
+  target: ReplayFrame["bullets"][number],
+): ReplayFrame["bullets"][number] | null {
+  let closest: ReplayFrame["bullets"][number] | null = null;
+  let closestDistance = Number.POSITIVE_INFINITY;
+
+  for (const bullet of bullets) {
+    const distance = Math.hypot(
+      bullet.pos.x - target.pos.x,
+      bullet.pos.y - target.pos.y,
+    );
+
+    if (distance < closestDistance) {
+      closest = bullet;
+      closestDistance = distance;
+    }
+  }
+
+  return closest;
+}
+
+function midpoint(a: Vec2, b: Vec2): Vec2 {
+  return {
+    x: (a.x + b.x) / 2,
+    y: (a.y + b.y) / 2,
+  };
+}
+
+function clampCameraTarget(
+  level: LevelConfig,
+  target: Vec2,
+  zoom: number,
+): Vec2 {
+  const halfWidth = level.arena.width / (2 * zoom);
+  const halfHeight = level.arena.height / (2 * zoom);
+
+  return {
+    x: clamp(target.x, halfWidth, level.arena.width - halfWidth),
+    y: clamp(target.y, halfHeight, level.arena.height - halfHeight),
+  };
+}
+
+function clamp(value: number, min: number, max: number): number {
+  return Math.min(max, Math.max(min, value));
+}
+
+function clamp01(value: number): number {
+  return clamp(value, 0, 1);
+}
+
+function easeOutCubic(value: number): number {
+  return 1 - Math.pow(1 - value, 3);
+}
+
+function smoothstep(edge0: number, edge1: number, value: number): number {
+  const t = clamp01((value - edge0) / (edge1 - edge0));
+
+  return t * t * (3 - 2 * t);
 }
 
 function render(): void {
   const level = currentLevel();
-  const replayFrame = activeReplayFrame();
-  const replaying = replayFrame !== null;
+  const replayView = activeReplayView();
+  const replayFrame = replayView?.frame ?? null;
+  const replaying = replayView !== null;
   const lastReplayFrame = session?.deathReplayFrames.at(-1) ?? null;
+  const deathIntro =
+    session?.state === "dead" && !isDeathScreenReady() && !replaying;
 
   renderGame({
     ctx,
     level,
     mode,
-    state: replaying ? "running" : (session?.state ?? "ready"),
+    state: replaying || deathIntro ? "running" : (session?.state ?? "ready"),
     player: replayFrame?.player ?? session?.player ?? createPlayer(level),
     shooters: session?.shooters ?? createShooters(level),
     bullets: replayFrame?.bullets ?? session?.bullets ?? [],
-    playerTrail: replaying ? [] : (session?.playerTrail ?? []),
-    presagioSegments: replaying ? [] : (session?.presagioSegments ?? []),
+    playerTrail: replayFrame?.playerTrail ?? session?.playerTrail ?? [],
+    presagioSegments:
+      replayFrame?.presagioSegments ?? session?.presagioSegments ?? [],
     timePickup: replayFrame?.timePickup ?? session?.timePickup ?? null,
-    pickupCollectEffects: replaying ? [] : (session?.pickupCollectEffects ?? []),
-    dashEffects: replaying ? [] : (session?.dashEffects ?? []),
+    pickupCollectEffects:
+      replayFrame?.pickupCollectEffects ?? session?.pickupCollectEffects ?? [],
+    dashEffects: replayFrame?.dashEffects ?? session?.dashEffects ?? [],
     trailLifetime:
       loadError || !session ? 1 : session.powers.letargo.visual.trailLifetime,
     elapsed: session ? getSessionScoreTime(session) : 0,
     bestTime,
     killingBullet:
-      !replaying || replayFrame === lastReplayFrame
+      deathIntro || !replaying || replayFrame === lastReplayFrame
         ? (session?.killingBullet ?? null)
         : null,
+    replayCamera: replayView?.camera ?? null,
     loadError,
   });
 }
@@ -313,17 +451,25 @@ function applyLevel(nextLevel: LevelConfig): void {
 
   setSessionLevel(session, nextLevel, "ready");
   deathReplayStartedAt = null;
+  deathScreenReadyAt = null;
   resizeCanvas();
   render();
   syncDeathScreen();
 }
 
 function startOrRestart(nextControlMode: ControlMode = controlMode): void {
-  if (!session || loadError || settingsOpen || session.state === "running") {
+  if (
+    !session ||
+    loadError ||
+    settingsOpen ||
+    session.state === "running" ||
+    (session.state === "dead" && !isDeathScreenReady())
+  ) {
     return;
   }
 
   deathReplayStartedAt = null;
+  deathScreenReadyAt = null;
   controlMode = nextControlMode;
   autoplayBot.reset();
   resetGameSession(session, "running");
@@ -338,6 +484,7 @@ function returnToStartScreen(): void {
   }
 
   deathReplayStartedAt = null;
+  deathScreenReadyAt = null;
   controlMode = "human";
   autoplayBot.reset();
   resetGameSession(session, "ready");
@@ -414,6 +561,7 @@ function update(rawDt: number): void {
 
   if (result.died) {
     bestTime = saveBestTime(bestTime, getSessionScoreTime(session));
+    deathScreenReadyAt = performance.now() + deathScreenDelayMs;
     syncTouchControls();
   }
 }

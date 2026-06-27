@@ -152,13 +152,16 @@ export function syncDeathScreen(args: {
   settingsOpen: boolean;
   state: GameState;
   replaying: boolean;
+  deathReady: boolean;
 }): void {
-  const { deathScreen, loadError, settingsOpen, state, replaying } = args;
+  const { deathScreen, loadError, settingsOpen, state, replaying, deathReady } =
+    args;
 
   deathScreen.hidden = !(
     !loadError &&
     !settingsOpen &&
     state === "dead" &&
-    !replaying
+    !replaying &&
+    deathReady
   );
 }

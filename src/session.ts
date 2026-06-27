@@ -58,6 +58,10 @@ export type ReplayFrame = {
   player: Player;
   bullets: Bullet[];
   timePickup: TimePickup | null;
+  playerTrail: LetargoTrailPoint[];
+  presagioSegments: PresagioSegment[];
+  pickupCollectEffects: PickupCollectEffect[];
+  dashEffects: DashEffect[];
 };
 
 export type GameSession = {
@@ -262,6 +266,10 @@ function recordSessionReplayFrame(session: GameSession, rawDt: number): void {
       player: session.player,
       bullets: session.bullets,
       timePickup: session.timePickup,
+      playerTrail: session.playerTrail,
+      presagioSegments: session.presagioSegments,
+      pickupCollectEffects: session.pickupCollectEffects,
+      dashEffects: session.dashEffects,
     }),
   );
 
@@ -351,12 +359,13 @@ function cloneReplayFrame(frame: ReplayFrame): ReplayFrame {
     time: frame.time,
     player: clonePlayer(frame.player),
     bullets: frame.bullets.map(cloneBullet),
-    timePickup: frame.timePickup
-      ? {
-          ...frame.timePickup,
-          pos: { ...frame.timePickup.pos },
-        }
-      : null,
+    timePickup: cloneTimePickup(frame.timePickup),
+    playerTrail: frame.playerTrail.map(cloneLetargoTrailPoint),
+    presagioSegments: frame.presagioSegments.map(clonePresagioSegment),
+    pickupCollectEffects: frame.pickupCollectEffects.map(
+      clonePickupCollectEffect,
+    ),
+    dashEffects: frame.dashEffects.map(cloneDashEffect),
   };
 }
 
@@ -372,5 +381,45 @@ function cloneBullet(bullet: Bullet): Bullet {
     ...bullet,
     pos: { ...bullet.pos },
     vel: { ...bullet.vel },
+  };
+}
+
+function cloneTimePickup(pickup: TimePickup | null): TimePickup | null {
+  return pickup
+    ? {
+        ...pickup,
+        pos: { ...pickup.pos },
+      }
+    : null;
+}
+
+function cloneLetargoTrailPoint(point: LetargoTrailPoint): LetargoTrailPoint {
+  return {
+    ...point,
+    pos: { ...point.pos },
+  };
+}
+
+function clonePresagioSegment(segment: PresagioSegment): PresagioSegment {
+  return {
+    from: { ...segment.from },
+    to: { ...segment.to },
+  };
+}
+
+function clonePickupCollectEffect(
+  effect: PickupCollectEffect,
+): PickupCollectEffect {
+  return {
+    ...effect,
+    pos: { ...effect.pos },
+  };
+}
+
+function cloneDashEffect(effect: DashEffect): DashEffect {
+  return {
+    ...effect,
+    from: { ...effect.from },
+    to: { ...effect.to },
   };
 }

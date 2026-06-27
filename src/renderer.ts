@@ -21,6 +21,13 @@ export type ResizeGameCanvasArgs = {
   mode: PageMode;
 };
 
+export type ReplayCamera = {
+  zoom: number;
+  target: Vec2;
+  flash: number;
+  label: "REPLAY" | "IMPACTO" | null;
+};
+
 export type RenderGameArgs = {
   ctx: CanvasRenderingContext2D;
   level: LevelConfig;
@@ -38,6 +45,7 @@ export type RenderGameArgs = {
   elapsed: number;
   bestTime: number;
   killingBullet: Bullet | null;
+  replayCamera: ReplayCamera | null;
   loadError: string;
 };
 
@@ -108,40 +116,19 @@ export function renderGame(args: RenderGameArgs): void {
     elapsed,
     bestTime,
     killingBullet,
+    replayCamera,
     loadError,
   } = args;
 
   ctx.clearRect(0, 0, level.arena.width, level.arena.height);
 
-  const gradient = ctx.createLinearGradient(
-    0,
-    0,
-    level.arena.width,
-    level.arena.height,
-  );
-  gradient.addColorStop(0, "#111827");
-  gradient.addColorStop(0.55, "#18181b");
-  gradient.addColorStop(1, "#052e2b");
+  ctx.save();
 
-  ctx.fillStyle = gradient;
-  ctx.fillRect(0, 0, level.arena.width, level.arena.height);
-
-  ctx.strokeStyle = "#334155";
-  ctx.lineWidth = 2;
-  ctx.strokeRect(1, 1, level.arena.width - 2, level.arena.height - 2);
-
-  if (mode !== "mobile") {
-    ctx.fillStyle = "#cbd5e1";
-    ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
-    ctx.textAlign = "left";
-    ctx.textBaseline = "top";
-    ctx.fillText(`Time ${formatTime(elapsed)}`, 18, 16);
-    ctx.fillText(level.name, 18, 36);
-
-    ctx.textAlign = "right";
-    ctx.fillText(`Best ${formatTime(bestTime)}`, level.arena.width - 18, 16);
-    ctx.fillText(`Bullets ${bullets.length}`, level.arena.width - 18, 36);
+  if (replayCamera) {
+    applyReplayCamera(ctx, level, replayCamera);
   }
+
+  drawArena(ctx, level);
 
   for (const shooter of shooters) {
     drawShooter(ctx, shooter, player.pos);
@@ -179,6 +166,100 @@ export function renderGame(args: RenderGameArgs): void {
       loadError,
     });
   }
+
+  ctx.restore();
+
+  if (mode !== "mobile") {
+    drawHud(ctx, {
+      level,
+      elapsed,
+      bestTime,
+      bulletCount: bullets.length,
+    });
+  }
+
+  if (replayCamera) {
+    drawReplayOverlay(ctx, level, replayCamera);
+  }
+}
+
+function drawArena(ctx: CanvasRenderingContext2D, level: LevelConfig): void {
+  const gradient = ctx.createLinearGradient(
+    0,
+    0,
+    level.arena.width,
+    level.arena.height,
+  );
+  gradient.addColorStop(0, "#111827");
+  gradient.addColorStop(0.55, "#18181b");
+  gradient.addColorStop(1, "#052e2b");
+
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, level.arena.width, level.arena.height);
+
+  ctx.strokeStyle = "#334155";
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 1, level.arena.width - 2, level.arena.height - 2);
+}
+
+function drawHud(
+  ctx: CanvasRenderingContext2D,
+  args: {
+    level: LevelConfig;
+    elapsed: number;
+    bestTime: number;
+    bulletCount: number;
+  },
+): void {
+  const { level, elapsed, bestTime, bulletCount } = args;
+
+  ctx.save();
+  ctx.fillStyle = "#cbd5e1";
+  ctx.font = "600 14px Inter, ui-sans-serif, system-ui, sans-serif";
+  ctx.textAlign = "left";
+  ctx.textBaseline = "top";
+  ctx.fillText(`Time ${formatTime(elapsed)}`, 18, 16);
+  ctx.fillText(level.name, 18, 36);
+
+  ctx.textAlign = "right";
+  ctx.fillText(`Best ${formatTime(bestTime)}`, level.arena.width - 18, 16);
+  ctx.fillText(`Bullets ${bulletCount}`, level.arena.width - 18, 36);
+  ctx.restore();
+}
+
+function applyReplayCamera(
+  ctx: CanvasRenderingContext2D,
+  level: LevelConfig,
+  camera: ReplayCamera,
+): void {
+  ctx.translate(level.arena.width / 2, level.arena.height / 2);
+  ctx.scale(camera.zoom, camera.zoom);
+  ctx.translate(-camera.target.x, -camera.target.y);
+}
+
+function drawReplayOverlay(
+  ctx: CanvasRenderingContext2D,
+  level: LevelConfig,
+  camera: ReplayCamera,
+): void {
+  ctx.save();
+
+  if (camera.flash > 0) {
+    ctx.fillStyle = `rgb(244 63 94 / ${Math.min(0.28, camera.flash)})`;
+    ctx.fillRect(0, 0, level.arena.width, level.arena.height);
+  }
+
+  if (camera.label) {
+    ctx.fillStyle = "rgb(248 250 252 / 0.94)";
+    ctx.font = "900 24px Inter, ui-sans-serif, system-ui, sans-serif";
+    ctx.textAlign = "center";
+    ctx.textBaseline = "middle";
+    ctx.shadowBlur = 24;
+    ctx.shadowColor = camera.label === "IMPACTO" ? "#fb7185" : "#67e8f9";
+    ctx.fillText(camera.label, level.arena.width / 2, 76);
+  }
+
+  ctx.restore();
 }
 
 function drawCircle(
@@ -198,7 +279,10 @@ function drawCircle(
   ctx.restore();
 }
 
-function drawKillingBulletMarker(ctx: CanvasRenderingContext2D, bullet: Bullet): void {
+function drawKillingBulletMarker(
+  ctx: CanvasRenderingContext2D,
+  bullet: Bullet,
+): void {
   ctx.save();
   ctx.shadowBlur = 26;
   ctx.shadowColor = "#f43f5e";

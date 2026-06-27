@@ -271,20 +271,21 @@ botSession.bullets = [
 const dangerAwareBotDirection = chooseBotDirection(botSession);
 assert.notEqual(dangerAwareBotDirection.x, 1);
 
-
 const deathSession = createGameSession({
   level: DEFAULT_LEVEL,
   powers,
   state: "running",
 });
 
+dashGameSession(deathSession, { x: 1, y: 0 });
 deathSession.bullets = [
   {
     pos: { ...deathSession.player.pos },
-    vel: { x: 0, y: 0 },
+    vel: { x: 180, y: 0 },
     radius: DEFAULT_LEVEL.bullets.radius,
   },
 ];
+activatePresagioGameSession(deathSession);
 
 const deathResult = updateGameSession(deathSession, {
   rawDt: 1 / 60,
@@ -292,9 +293,18 @@ const deathResult = updateGameSession(deathSession, {
   slowHeld: false,
 });
 
+const finalReplayFrame = deathSession.deathReplayFrames.at(-1);
+
 assert.equal(deathResult.died, true);
 assert.ok(deathSession.killingBullet);
 assert.ok(deathSession.replayFrames.length > 0);
 assert.ok(deathSession.deathReplayFrames.length > 0);
+
+if (!finalReplayFrame) {
+  throw new Error("Expected a final death replay frame");
+}
+
+assert.ok(finalReplayFrame.dashEffects.length > 0);
+assert.ok(finalReplayFrame.presagioSegments.length > 0);
 
 console.log(":) selfcheck passed!");
