@@ -55,6 +55,10 @@ export function getDom() {
       document.querySelector<HTMLButtonElement>("#start-cta"),
       "Missing #start-cta",
     ),
+    startBotCta: requireValue(
+      document.querySelector<HTMLButtonElement>("#start-bot-cta"),
+      "Missing #start-bot-cta",
+    ),
     touchControls: requireValue(
       document.querySelector<HTMLElement>("#touch-controls"),
       "Missing #touch-controls",

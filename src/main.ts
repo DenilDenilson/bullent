@@ -50,6 +50,8 @@ import {
   syncStartScreen as syncStartScreenUi,
   syncTouchControls as syncTouchControlsUi,
 } from "./ui.ts";
+// B O T !!!
+import { createAutoplayBot, type BotInput } from "./bot.ts";
 
 const {
   gameCanvas,
@@ -64,6 +66,7 @@ const {
   presagioPower,
   startScreen,
   startCta,
+  startBotCta,
   touchControls,
   touchJoystickZone,
   touchJoystickBase,
@@ -92,6 +95,18 @@ let bestTime = loadBestTime();
 let lastTime = performance.now();
 let loadError = "";
 let settingsOpen = false;
+
+type ControlMode = "human" | "bot";
+
+const autoplayBot = createAutoplayBot();
+let controlMode: ControlMode = "human";
+
+const emptyBotInput: BotInput = {
+  direction: { x: 0, y: 0 },
+  slowHeld: false,
+  useDash: false,
+  usePresagio: false,
+};
 
 function currentLevel(): LevelConfig {
   return session?.level ?? baseLevel;
@@ -246,17 +261,23 @@ function applyLevel(nextLevel: LevelConfig): void {
   render();
 }
 
-function startOrRestart(): void {
+function startOrRestart(nextControlMode: ControlMode = "human"): void {
   if (!session || loadError || settingsOpen || session.state === "running") {
     return;
   }
 
+  controlMode = nextControlMode;
+  autoplayBot.reset()
   resetGameSession(session, "running");
   syncStartScreen();
   syncTouchControls();
 }
 
-function inputDirection(): Vec2 {
+function inputDirection(botInput: BotInput = emptyBotInput): Vec2 {
+  if (controlMode === "bot" && session?.state === "running") {
+    return botInput.direction;
+  }
+
   const keyboardDirection = keyboardInput.direction();
 
   return keyboardDirection.x !== 0 || keyboardDirection.y !== 0
@@ -283,10 +304,26 @@ function update(rawDt: number): void {
     return;
   }
 
+  const botInput =
+    controlMode === "bot" && session.state === "running"
+      ? autoplayBot.think(session, rawDt)
+      : emptyBotInput;
+
+  if (botInput.usePresagio) {
+    activatePresagioGameSession(session);
+  }
+
+  if (botInput.useDash) {
+    dashGameSession(session, botInput.direction);
+  }
+
   const result = updateGameSession(session, {
     rawDt,
-    direction: inputDirection(),
-    slowHeld: keyboardInput.isPressed("control") || touchInput.isSlowHeld(),
+    direction: inputDirection(botInput),
+    slowHeld:
+      controlMode === "bot"
+        ? botInput.slowHeld
+        : keyboardInput.isPressed("control") || touchInput.isSlowHeld(),
   });
 
   if (result.died) {
@@ -328,7 +365,7 @@ const keyboardInput = createKeyboardInput({
   },
 
   onStart: () => {
-    startOrRestart();
+    startOrRestart("human");
   },
 });
 
@@ -354,7 +391,7 @@ const touchInput = createTouchInput({
     },
 
     onStart: () => {
-      startOrRestart();
+      startOrRestart("human");
     },
 
     onDash: () => {
@@ -376,7 +413,7 @@ gameCanvas.addEventListener("pointerdown", () => {
     return;
   }
   gameCanvas.focus();
-  startOrRestart();
+  startOrRestart("human");
 });
 
 startCta.addEventListener("click", (event: any) => {
@@ -386,7 +423,13 @@ startCta.addEventListener("click", (event: any) => {
     return;
   }
   gameCanvas.focus();
-  startOrRestart();
+  startOrRestart("human");
+});
+
+startBotCta.addEventListener("click", (event: any) => {
+  event.stopPropagation();
+  gameCanvas.focus();
+  startOrRestart("bot");
 });
 
 settingsToggle.addEventListener("click", openSettings);

@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { chooseBotDirection, thinkBot } from "./bot.ts";
 import {
   DEFAULT_LEVEL,
   circlesTouch,
@@ -229,5 +230,45 @@ assert.equal(pickupResult.died, false);
 assert.equal(pickupResult.collectedTimePickup, true);
 assert.equal(pickupSession.bonusTime, TIME_PICKUP_BONUS_SECONDS);
 assert.equal(getSessionScoreTime(pickupSession), TIME_PICKUP_BONUS_SECONDS);
+
+const botSession = createGameSession({
+  level: DEFAULT_LEVEL,
+  powers,
+  state: "running",
+});
+
+botSession.timePickup = {
+  pos: {
+    x: botSession.player.pos.x + 100,
+    y: botSession.player.pos.y,
+  },
+  radius: 12,
+  value: TIME_PICKUP_BONUS_SECONDS,
+};
+
+const botDirection = chooseBotDirection(botSession);
+assert.equal(botDirection.x, 1);
+assert.equal(botDirection.y, 0);
+
+const botInput = thinkBot(botSession);
+assert.equal(botInput.direction.x, 1);
+assert.equal(botInput.direction.y, 0);
+assert.equal(botInput.slowHeld, false);
+assert.equal(botInput.useDash, false);
+assert.equal(botInput.usePresagio, false);
+
+botSession.bullets = [
+  {
+    pos: {
+      x: botSession.player.pos.x + 34,
+      y: botSession.player.pos.y,
+    },
+    vel: { x: -180, y: 0 },
+    radius: DEFAULT_LEVEL.bullets.radius,
+  },
+];
+
+const dangerAwareBotDirection = chooseBotDirection(botSession);
+assert.notEqual(dangerAwareBotDirection.x, 1);
 
 console.log(":) selfcheck passed!");

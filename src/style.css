@@ -175,7 +175,7 @@
   #start-screen {
     @apply absolute inset-0 z-30 grid overflow-hidden rounded-lg;
     grid-template-rows: auto auto auto minmax(0, 1fr) auto;
-    gap: 1rem;
+    gap: 0.25rem;
     padding: 1.35rem 1rem 0.85rem;
     color: var(--theme-text);
     pointer-events: none;
@@ -361,6 +361,28 @@
       0 0 34px rgb(94 234 212 / 0.44);
   }
 
+  .start-actions {
+    @apply grid justify-items-center gap-1.5;
+    pointer-events: none;
+  }
+
+  .start-actions button {
+    pointer-events: auto;
+  }
+
+  #start-bot-cta {
+    @apply rounded-full px-3 py-1 text-xs font-black uppercase tracking-wide outline-none transition focus-visible:ring-2 focus-visible:ring-cyan-200;
+    color: rgb(186 230 253 / 0.9);
+    border: 1px solid rgb(125 211 252 / 0.28);
+    background: rgb(15 23 42 / 0.46);
+  }
+
+  #start-bot-cta:hover {
+    color: #ecfeff;
+    border-color: rgb(125 211 252 / 0.64);
+    background: rgb(8 47 73 / 0.62);
+  }
+
   #settings-panel {
     @apply absolute inset-3 z-60 overflow-y-auto rounded-lg border border-slate-400/20 bg-slate-950/95 p-4 text-sm text-slate-100 shadow-2xl outline-none backdrop-blur;
     max-height: calc(100% - 24px);
@@ -522,7 +544,7 @@
 
   @media (max-width: 430px) {
     #start-screen {
-      gap: 0.75rem;
+      gap: 0.25rem;
       padding: 1rem 0.8rem 0.75rem;
     }
 
