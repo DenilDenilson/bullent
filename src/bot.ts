@@ -26,7 +26,7 @@ const botDashCooldown = 1.1;
 const letargoDangerThreshold = 0.35;
 const presagioDangerThreshold = 0.45;
 const presagioBulletThreshold = 10;
-const dashDangerThreshold = 0.85;
+const dashDangerThreshold = 1.05;
 
 // Recomendadas por IA
 const dangerLookaheadTimes = [0, 0.12, 0.24, 0.36, 0.48, 0.6];
