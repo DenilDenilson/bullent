@@ -8,13 +8,17 @@
     "build": "tsc && vite build",
     "selfcheck": "node src/selfcheck.ts",
     "bot:benchmark": "node src/bot-benchmark.ts",
-    "bot:tune": "node src/bot-tune.ts"
+    "bot:tune": "node src/bot-tune.ts",
+    "deploy": "pnpm run build && wrangler deploy",
+    "preview": "pnpm run build && wrangler dev"
   },
   "devDependencies": {
+    "@cloudflare/vite-plugin": "^1.42.3",
     "@tailwindcss/vite": "^4.3.1",
     "@types/node": "^24.10.2",
     "tailwindcss": "^4.3.1",
     "typescript": "^5.9.3",
-    "vite": "^7.2.7"
+    "vite": "^7.2.7",
+    "wrangler": "^4.105.0"
   }
 }
