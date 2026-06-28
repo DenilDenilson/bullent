@@ -10,9 +10,11 @@
 ![Render](https://img.shields.io/badge/render-Canvas%202D-F97316)
 ![Deploy](https://img.shields.io/badge/deploy-Cloudflare%20Pages-0EA5E9)
 ![Embed](https://img.shields.io/badge/embed-iframe-EC4899)
+![Audio](https://img.shields.io/badge/audio-Web%20Audio%20%2B%20MP3-22C55E)
+![Bot](https://img.shields.io/badge/bot-autoplay-8B5CF6)
 
 **Aguanta más tiempo. Esquiva el caos.**
-Un minijuego 2D embebible, diseñado para vivir dentro de un portfolio sin depender de frameworks pesados.
+Un minijuego 2D embebible con poderes, replay, audio y bot autoplay, diseñado para vivir dentro de un portfolio sin depender de frameworks pesados.
 
 [Jugar Bullent](https://bullent.denil.org/) ·
 [Modo embed](https://bullent.denil.org/?embed=1) ·
@@ -38,7 +40,7 @@ Las balas rebotan en las paredes y se acumulan durante la partida, haciendo que 
 
 > [!IMPORTANT]
 > Bullent no busca ser un juego grande ni un motor complejo.
-> Es una experiencia pequeña, pulida y embebible para demostrar interacción, arquitectura frontend y diseño de dificultad en navegador.
+> Es una experiencia pequeña, pulida y embebible en navegador.
 
 ---
 
@@ -63,12 +65,16 @@ Incluye:
 * 🕹️ survival infinito;
 * 🏆 récord local con `localStorage`;
 * 💎 rombos dorados de tiempo que suman segundos al marcador;
-* ⚙️ configuración de nivel desde JSON y panel in-game;
+* ⚙️ configuración de nivel desde JSON y panel in-game _(future)_;
 * 🧩 modo embebible por `iframe`;
-* 📱 modo mobile fullscreen con controles táctiles;
+* 📱 modo mobile fullscreen con layout tipo consola portátil;
 * ⚡ tres poderes de jugador implementados: Destello, Letargo y Presagio;
+* 🔊 música local, efectos con Web Audio y toggle de sonido;
+* 🤖 bot autoplay jugable desde inicio o pantalla de muerte;
+* 🎬 replay corto de la muerte para entender qué pasó;
 * 🎯 disparadores triangulares que apuntan con su vértice;
 * ✨ feedback visual para dash, pickups, cámara lenta y trayectorias;
+* 📊 scripts de benchmark y tuning para probar el bot;
 * ☁️ deploy estático en Cloudflare Pages.
 
 ---
@@ -113,15 +119,16 @@ D / →       → moverse derecha
 V           → Destello
 C           → Presagio
 Ctrl hold   → Letargo
+Click       → iniciar / reiniciar
 ```
 
 ### Mobile fullscreen
 
 ```txt
-Zona derecha drag           → movimiento
-Botón izquierdo superior    → Presagio
-Cuarto de círculo izquierdo → Letargo mientras mantienes presionado
-Botón izquierdo inferior    → Destello
+Zona derecha drag       → movimiento
+Pad izquierdo 1 toque   → Presagio
+Pad izquierdo 2 toques  → Destello
+Pad izquierdo hold      → Letargo
 ```
 
 > [!NOTE]
@@ -192,8 +199,16 @@ Bullent usa una arquitectura pequeña y directa.
 | `src/input/touch.ts` | Input táctil para mobile fullscreen |
 | `src/powers/*.ts` | Lógica aislada de Destello, Letargo y Presagio |
 | `src/pickups.ts` | Rombos de tiempo y lógica de recolección |
+| `src/bot.ts` | Bot heurístico: elige dirección, Letargo, Destello y Presagio |
+| `src/bot-benchmark.ts` | Simulaciones repetibles para medir score del bot |
+| `src/bot-tune.ts` | Búsqueda simple de parámetros para mejorar el bot |
+| `src/sound.ts` | Música, efectos Web Audio y preferencia de sonido |
 | `src/ui.ts` | Sincronización de HUD, cooldowns, start screen y settings |
 | `src/settings.ts` | Lectura y escritura del panel de configuración |
+| `src/loaders.ts` | Carga de `levels.json` y `powers.json` |
+| `src/storage.ts` | Persistencia de récord local |
+| `src/dom.ts` | Captura validada de nodos DOM |
+| `src/validation.ts` | Validaciones pequeñas para config externa |
 | `src/mode.ts` | Modos `standalone`, `embed` y `mobile` |
 | `src/main.ts` | Orquestación: carga, loop, eventos y pegamento entre módulos |
 | `src/style.css` | Estilos, start screen, embed, mobile fullscreen y controles |
@@ -227,7 +242,9 @@ La versión actual usa una estética **minimalista neón / glassmorphism**, con 
 * ⚡ rastro visual de Destello;
 * 🐢 estela tipo cámara lenta para Letargo;
 * 🧭 líneas fucsias de predicción para Presagio;
-* ✨ feedback de recolección `+15s`.
+* ✨ feedback de recolección `+15s`;
+* 🎬 replay de impacto con cámara y freeze corto;
+* 🔊 sonido activable/desactivable sin depender de backend.
 
 El estilo está separado de la lógica del juego para permitir cambios visuales sin tocar reglas internas.
 
@@ -317,6 +334,16 @@ pnpm selfcheck
 pnpm build
 ```
 
+Herramientas del bot:
+
+```bash
+pnpm bot:benchmark
+pnpm bot:tune
+```
+
+> [!NOTE]
+> El bot actual es heurístico, no una IA entrenada. Sirve para demo, balance y pruebas repetibles.
+
 ---
 
 ## 🧪 Qué busca enseñar este proyecto
@@ -335,6 +362,8 @@ Bullent no es solo un juego pequeño. También es una excusa para practicar fund
 | 🧩 Modularidad    | Separación entre sesión, render, input, poderes y configuración |
 | 🌐 Distribución   | Deploy estático, rutas por modo e iframe               |
 | 💎 Diseño sistémico | Pickups, score bonus y feedback de recolección        |
+| 🤖 Bots           | Heurísticas, benchmarks y tuning reproducible           |
+| 🔊 Audio          | Música local, efectos sintéticos y reglas de autoplay   |
 
 ---
 
@@ -348,9 +377,9 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 
 | Estado | Poder | Tipo | Activación | Efecto | Nota de balance |
 | --- | --- | --- | --- | --- | --- |
-| 🟢 Implementado | ⚡ Destello | Movimiento | `V` / doble tap mobile | Desplaza rápidamente al jugador en una dirección | Sin cooldown; puede meterte en peligro si lo usas mal |
+| 🟢 Implementado | ⚡ Destello | Movimiento | `V` / 2 toques mobile | Desplaza rápidamente al jugador en una dirección | Sin cooldown; puede meterte en peligro si lo usas mal |
 | 🟢 Implementado | 🐢 Letargo | Control temporal | `Ctrl` / hold mobile | Ralentiza el tiempo global mientras se mantiene presionado | Energía de 3s y cooldown al agotarse |
-| 🟢 Implementado | 🧭 Presagio | Lectura táctica | `C` / botón mobile | Dibuja líneas hacia el próximo rebote de las balas para encontrar zonas seguras | Cooldown fijo de 2s; debe ser claro sin ensuciar la arena |
+| 🟢 Implementado | 🧭 Presagio | Lectura táctica | `C` / 1 toque mobile | Dibuja líneas hacia el próximo rebote de las balas para encontrar zonas seguras | Cooldown fijo de 2s; debe ser claro sin ensuciar la arena |
 | ⚪ Pendiente | 🛡️ Égida | Defensivo | TBD | Bloquea una bala o permite sobrevivir a un golpe | Debe durar poco o bloquear solo un impacto |
 | ⚪ Pendiente | 🌀 Pulso | Control de espacio | TBD | Empuja las balas cercanas hacia afuera | No debería destruir todas las balas |
 | ⚪ Pendiente | ✨ Desfase | Evasión | TBD | El jugador ignora colisiones por un instante | Requiere timing preciso |
@@ -363,7 +392,7 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 | Estado | Poder enemigo | Tipo | Efecto | Uso principal | Riesgo / Balance |
 | --- | --- | --- | --- | --- | --- |
 | 🟢 Implementado | 🔺 Disparo triangular | Base | Un triángulo naranja apunta y dispara desde su vértice hacia el jugador | Primer patrón de aprendizaje | Puede volverse plano sin variantes |
-| ⚪ Pendiente | 🎯 Predict | Precisión | Apunta hacia donde el jugador probablemente estará | Castigar movimiento en línea recta | No debe ser perfecto para evitar injusticia |
+| ⚪ Pendiente | 🎯 Predict | Precisión | Apunta hacia donde el jugador probablemente estará y dispara un láser, primero su rastro para poder evitarlo y luego el láser real | Castigar movimiento en línea recta | No debe ser perfecto para evitar injusticia |
 | ⚪ Pendiente | 🔁 Doble disparo | Presión | Lanza dos balas con separación angular | Crear pequeños abanicos de peligro | Puede saturar rápido la pantalla |
 | ⚪ Pendiente | 🧨 Bala pesada | Control de espacio | Dispara una bala más grande y lenta | Bloquear rutas del jugador | Debe ser fácil de leer visualmente |
 | ⚪ Pendiente | 🪃 Bala acelerada | Escalado | La bala empieza lenta y aumenta velocidad | Subir tensión con el tiempo | Puede sorprender demasiado si acelera mucho |
@@ -380,14 +409,18 @@ Bullent puede crecer de forma progresiva sin perder su esencia minimalista.
 | 🟢 Implementado | ✨ Feedback de recolección | VFX | Anillo dorado y texto `+15s` al recoger un diamante | Refuerza que el score cambió |
 | 🟢 Implementado | ⚡ Rastro de Destello | VFX | Línea/eco entre posición inicial y final del dash | Hace legible el reposicionamiento |
 | 🟢 Implementado | 🧭 Líneas de Presagio | VFX táctico | Muestra hacia dónde viajarán las balas hasta el próximo rebote | Ayuda a leer zonas seguras |
+| 🟢 Implementado | 🎬 Replay de muerte | Feedback | Reproduce los últimos instantes del choque con cámara/freeze | Ayuda a entender la pérdida |
+| 🟢 Implementado | 🔊 Audio toggle | UX | Música de fondo y efectos para dash, pickup, Presagio, muerte y replay | Respeta preferencia local |
 | ⚪ Pendiente | 🗡️ Ataque del jugador | Combate / niveles | Permitir atacar cuando existan niveles más estructurados | No entra hasta que el diseño pida objetivos ofensivos |
 
 ### Roadmap de IA / bots
 
 | Estado | Idea | Descripción | Nota |
 | --- | --- | --- | --- |
-| ⚪ Pendiente | 🤖 Bot autoplay | Un bot simple juega solo usando heurísticas | Útil para demo en portfolio o modo attract |
-| ⚪ Pendiente | 📊 Bot de benchmark | Simula partidas para comparar dificultad entre niveles | Sirve para balance automático |
+| 🟢 Implementado | 🤖 Bot autoplay | Un bot heurístico juega solo usando movimiento, Letargo, Destello y Presagio | Útil para demo en portfolio o modo attract |
+| 🟢 Implementado | 📊 Bot de benchmark | Simula partidas con seeds para comparar score, pickups, dashes y muertes | Sirve para balance automático |
+| 🟢 Implementado | 🎛️ Bot tuning | Prueba candidatos de configuración y sugiere valores para `defaultBotTuning` | Es búsqueda simple, suficiente para iterar |
+| ⚪ Pendiente | 🔁 Switch in-game humano/bot | Cambiar entre persona y bot sin reiniciar manualmente | Ya existe bot, falta hacerlo cómodo dentro de partida |
 | ⚪ Pendiente | 🧬 IA evolutiva entrenada | Cargar una estrategia/modelo ya entrenado para controlar al jugador | El entrenamiento no viviría en este repo ni en el navegador |
 
 Orden recomendado:
@@ -399,8 +432,8 @@ Orden recomendado:
 | 3 | Enemigo | 🎯 Disparo predictivo | Hace que el movimiento del jugador importe más |
 | 4 | Enemigo | 🧨 Bala pesada | Añade variedad sin complicar demasiado |
 | 5 | Sistema | 🗡️ Ataque del jugador | Abre la puerta a niveles con objetivos ofensivos |
-| 6 | Sistema | 🤖 Bot autoplay | Vuelve el juego más vistoso como pieza de portfolio |
-| 7 | Sistema | 📊 Bot de benchmark | Ayuda a balancear sin depender solo de intuición |
+| 6 | Sistema | 🔁 Switch humano/bot | Hace más cómoda la demo sin salir del intento |
+| 7 | Sistema | 📊 Métricas de intento | Ayuda a leer progreso, pickups y uso de poderes |
 | 8 | Sistema | 🧬 IA evolutiva entrenada | Sería una capa avanzada, cargada ya entrenada |
 
 Posibles mejoras:
@@ -408,14 +441,13 @@ Posibles mejoras:
 * 🛡️ Escudo temporal
 * ✨ Power-ups
 * 🗡️ Ataque del jugador
-* 🔊 Efectos de sonido
 * 📊 Estadísticas de intento
 * 🎚️ Modos de dificultad
 * 📱 Pulido mobile en dispositivos físicos
 * 🎨 Selector de temas
 * 🧪 Sistema de balance por configuración
 * 🎛️ Teclas y colores de poderes definidos desde `powers.json`
-* 🤖 Bot que juegue solo
+* 🔁 Cambio humano/bot durante partida
 * 🧬 IA evolutiva ya entrenada
 
 ---
