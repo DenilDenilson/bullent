@@ -468,6 +468,7 @@ function applyLevel(nextLevel: LevelConfig): void {
   deathReplayStartedAt = null;
   deathScreenReadyAt = null;
   replayImpactPlayed = false;
+  sound.setMusicActive(false);
   sound.setLetargoActive(false);
   resizeCanvas();
   render();
@@ -493,6 +494,7 @@ function startOrRestart(nextControlMode: ControlMode = controlMode): void {
   controlMode = nextControlMode;
   autoplayBot.reset();
   resetGameSession(session, "running");
+  sound.setMusicActive(true);
   syncStartScreen();
   syncDeathScreen();
   syncTouchControls();
@@ -506,6 +508,7 @@ function returnToStartScreen(): void {
   deathReplayStartedAt = null;
   deathScreenReadyAt = null;
   replayImpactPlayed = false;
+  sound.setMusicActive(false);
   sound.setLetargoActive(false);
   controlMode = "human";
   autoplayBot.reset();
@@ -526,6 +529,7 @@ function startDeathReplay(): void {
 
   deathReplayStartedAt = performance.now();
   replayImpactPlayed = false;
+  sound.setMusicActive(false);
   sound.setLetargoActive(false);
   sound.playReplayStart();
   syncDeathScreen();
@@ -567,9 +571,12 @@ function activatePresagioPower(): void {
 
 function update(rawDt: number): void {
   if (!session) {
+    sound.setMusicActive(false);
     sound.setLetargoActive(false);
     return;
   }
+
+  sound.setMusicActive(session.state === "running");
 
   const botInput =
     controlMode === "bot" && session.state === "running"
@@ -601,6 +608,7 @@ function update(rawDt: number): void {
 
   if (result.died) {
     sound.playDeath();
+    sound.setMusicActive(false);
     sound.setLetargoActive(false);
     bestTime = saveBestTime(bestTime, getSessionScoreTime(session));
     deathScreenReadyAt = performance.now() + deathScreenDelayMs;

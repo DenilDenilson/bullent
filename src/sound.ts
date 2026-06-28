@@ -1,4 +1,7 @@
 const soundEnabledKey = "bullent.soundEnabled";
+const musicUrl = "/audio/bullent-forward-drive-demo.mp3";
+const musicVolume = 0.5;
+const letargoHumVolume = 0.35;
 
 type OscillatorWave = OscillatorType;
 
@@ -6,6 +9,7 @@ type SoundManager = {
   isEnabled: () => boolean;
   setEnabled: (nextEnabled: boolean) => void;
   unlock: () => void;
+  setMusicActive: (active: boolean) => void;
   setLetargoActive: (active: boolean) => void;
   playDash: () => void;
   playPickup: () => void;
@@ -25,6 +29,8 @@ export function createSoundManager(): SoundManager {
   let enabled = loadSoundEnabled();
   let context: AudioContext | null = null;
   let hum: HumNodes | null = null;
+  let music: HTMLAudioElement | null = null;
+  let musicActive = false;
 
   function audioContext(): AudioContext | null {
     if (!enabled) return null;
@@ -47,6 +53,7 @@ export function createSoundManager(): SoundManager {
 
   function unlock(): void {
     void audioContext();
+    syncMusic();
   }
 
   function setEnabled(nextEnabled: boolean): void {
@@ -55,10 +62,45 @@ export function createSoundManager(): SoundManager {
 
     if (!enabled) {
       stopLetargoHum();
+      syncMusic();
       return;
     }
 
     unlock();
+  }
+
+  function getMusic(): HTMLAudioElement {
+    if (!music) {
+      music = new Audio(musicUrl);
+      music.loop = true;
+      music.volume = musicVolume;
+      music.preload = "auto";
+    }
+
+    return music;
+  }
+
+  function syncMusic(): void {
+    if (!musicActive || !enabled) {
+      music?.pause();
+      return;
+    }
+
+    const track = getMusic();
+    track.volume = musicVolume;
+
+    if (track.paused) {
+      void track.play().catch(() => {
+        // Browser autoplay rules may block this until the next user gesture.
+      });
+    }
+  }
+
+  function setMusicActive(active: boolean): void {
+    if (musicActive === active) return;
+
+    musicActive = active;
+    syncMusic();
   }
 
   function playTone(args: {
@@ -147,7 +189,10 @@ export function createSoundManager(): SoundManager {
     oscillator.type = "sine";
     oscillator.frequency.setValueAtTime(82, ctx.currentTime);
     gain.gain.setValueAtTime(0.0001, ctx.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.028, ctx.currentTime + 0.08);
+    gain.gain.exponentialRampToValueAtTime(
+      letargoHumVolume,
+      ctx.currentTime + 0.08,
+    );
 
     oscillator.connect(gain);
     gain.connect(ctx.destination);
@@ -174,6 +219,7 @@ export function createSoundManager(): SoundManager {
 
     setEnabled,
     unlock,
+    setMusicActive,
 
     setLetargoActive(active) {
       if (active && enabled) {
