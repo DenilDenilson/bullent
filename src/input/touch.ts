@@ -20,15 +20,42 @@ export type TouchInputCallbacks = {
   onPresagio: () => void;
 };
 
+export type TouchInputVisual = {
+  direction: Vec2;
+  slowHeld: boolean;
+  useDash: boolean;
+  usePresagio: boolean;
+};
+
 export type TouchInput = {
   direction: () => Vec2;
   isSlowHeld: () => boolean;
   resetJoystick: () => void;
   clearPowerHold: () => void;
+  showAutoplayVisual: (input: TouchInputVisual) => void;
+  clearAutoplayVisual: () => void;
 };
 
 const powerHoldDelayMs = 290;
 const powerDoubleTapDelayMs = 240;
+
+export function joystickOffsetForDirection(
+  direction: Vec2,
+  joystickRadius: number,
+): Vec2 {
+  const length = Math.hypot(direction.x, direction.y);
+
+  if (length === 0) {
+    return { x: 0, y: 0 };
+  }
+
+  const distance = Math.min(1, length) * joystickRadius;
+
+  return {
+    x: (direction.x / length) * distance,
+    y: (direction.y / length) * distance,
+  };
+}
 
 export function createTouchInput(args: {
   elements: TouchInputElements;
@@ -107,6 +134,41 @@ export function createTouchInput(args: {
     joystickPointerId = null;
     joystickOrigin = null;
     touchDirection = { x: 0, y: 0 };
+    elements.joystickBase.classList.remove("is-active");
+    elements.joystickBase.style.left = "";
+    elements.joystickBase.style.top = "";
+    elements.joystickBase.style.right = "";
+    elements.joystickBase.style.transform = "";
+    elements.joystickThumb.style.transform = "translate(0, 0)";
+  }
+
+  function setAutoplayJoystickVisual(direction: Vec2): void {
+    if (joystickPointerId !== null) {
+      return;
+    }
+
+    const offset = joystickOffsetForDirection(direction, config.joystickRadius);
+
+    if (offset.x === 0 && offset.y === 0) {
+      clearAutoplayJoystickVisual();
+      return;
+    }
+
+    const rect = elements.joystickZone.getBoundingClientRect();
+
+    elements.joystickBase.style.left = `${rect.width / 2}px`;
+    elements.joystickBase.style.top = `${rect.height / 2}px`;
+    elements.joystickBase.style.right = "auto";
+    elements.joystickBase.style.transform = "translate(-50%, -50%)";
+    elements.joystickBase.classList.add("is-active");
+    elements.joystickThumb.style.transform = `translate(${offset.x}px, ${offset.y}px)`;
+  }
+
+  function clearAutoplayJoystickVisual(): void {
+    if (joystickPointerId !== null) {
+      return;
+    }
+
     elements.joystickBase.classList.remove("is-active");
     elements.joystickBase.style.left = "";
     elements.joystickBase.style.top = "";
@@ -254,5 +316,29 @@ export function createTouchInput(args: {
     resetJoystick,
 
     clearPowerHold,
+
+    showAutoplayVisual(input) {
+      setAutoplayJoystickVisual(input.direction);
+
+      if (powerPointerId === null && !touchSlowHeld) {
+        elements.powerPad.classList.toggle("is-holding", input.slowHeld);
+      }
+
+      if (input.useDash) {
+        flashPowerPad("destello");
+      }
+
+      if (input.usePresagio) {
+        flashPowerPad("presagio");
+      }
+    },
+
+    clearAutoplayVisual() {
+      clearAutoplayJoystickVisual();
+
+      if (powerPointerId === null && !touchSlowHeld) {
+        elements.powerPad.classList.remove("is-holding");
+      }
+    },
   };
 }

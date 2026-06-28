@@ -569,6 +569,19 @@ function activatePresagioPower(): void {
   sound.playPresagio();
 }
 
+function syncAutoplayTouchVisual(botInput: BotInput): void {
+  if (
+    mode !== "mobile" ||
+    controlMode !== "bot" ||
+    currentState() !== "running"
+  ) {
+    touchInput.clearAutoplayVisual();
+    return;
+  }
+
+  touchInput.showAutoplayVisual(botInput);
+}
+
 function update(rawDt: number): void {
   if (!session) {
     sound.setMusicActive(false);
@@ -582,6 +595,8 @@ function update(rawDt: number): void {
     controlMode === "bot" && session.state === "running"
       ? autoplayBot.think(session, rawDt)
       : emptyBotInput;
+
+  syncAutoplayTouchVisual(botInput);
 
   if (botInput.usePresagio) {
     activatePresagioGameSession(session);

@@ -25,6 +25,7 @@ import {
   updatePresagio,
 } from "./powers/presagio.ts";
 import { parsePowersConfig } from "./powers/index.ts";
+import { joystickOffsetForDirection } from "./input/touch.ts";
 import { TIME_PICKUP_BONUS_SECONDS } from "./pickups.ts";
 import {
   activatePresagioGameSession,
@@ -51,6 +52,18 @@ assert.equal(powers.presagio.cooldown, 2);
 assert.equal(powers.presagio.duration, 0.85);
 
 const player = createPlayer();
+
+assert.deepEqual(joystickOffsetForDirection({ x: 0, y: 0 }, 42), {
+  x: 0,
+  y: 0,
+});
+
+const joystickDiagonalOffset = joystickOffsetForDirection({ x: 1, y: 1 }, 42);
+assert.ok(
+  Math.abs(
+    Math.hypot(joystickDiagonalOffset.x, joystickDiagonalOffset.y) - 42,
+  ) < 0.000001,
+);
 
 const moved = movePlayer(player, { x: -1, y: -1 }, 10);
 assert.equal(moved.pos.x, DEFAULT_LEVEL.player.radius);
