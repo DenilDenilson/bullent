@@ -2,7 +2,10 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"
+    />
     <title>Bullent</title>
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   </head>
@@ -10,11 +13,11 @@
     <div id="app">
       <main id="standalone-page">
         <section class="standalone-copy" aria-labelledby="standalone-title">
-          <p class="standalone-kicker">portfolio game / MVP</p>
+          <p class="standalone-kicker">survival arcade</p>
           <h1 id="standalone-title">Bullent</h1>
           <p>
-            Esquiva balas, rompe tu récord y prueba poderes en una arena
-            compacta hecha para vivir dentro de un portfolio.
+            Esquiva balas, rompe tu récord y domina poderes en una arena
+            compacta que se vuelve más peligrosa con cada segundo.
           </p>
           <div class="standalone-actions">
             <a href="https://www.denil.org/">volver a denil.org</a>
@@ -100,8 +103,9 @@
 
             <div class="start-controls" aria-label="Controles de movimiento">
               <span>MOVIMIENTO</span>
-              <kbd>WASD</kbd>
-              <kbd>↑ ↓ ← →</kbd>
+              <kbd class="desktop-control">WASD</kbd>
+              <kbd class="desktop-control">↑ ↓ ← →</kbd>
+              <kbd class="mobile-control">ARRASTRA</kbd>
             </div>
 
             <div class="start-powers" aria-label="Poderes">
@@ -114,7 +118,8 @@
                   <h2>Destello</h2>
                   <p>Reposición rápida hacia tu dirección actual.</p>
                 </div>
-                <span class="start-pill">V</span>
+                <span class="start-pill desktop-control">V</span>
+                <span class="start-pill mobile-control">2 TOQUES</span>
               </article>
               <article class="start-power-card">
                 <div class="start-power-icon">
@@ -124,7 +129,8 @@
                   <h2>Letargo</h2>
                   <p>Ralentiza la simulación mientras tengas energía.</p>
                 </div>
-                <span class="start-pill">CTRL</span>
+                <span class="start-pill desktop-control">CTRL</span>
+                <span class="start-pill mobile-control">MANTÉN</span>
               </article>
               <article class="start-power-card">
                 <div class="start-power-icon">
@@ -134,7 +140,8 @@
                   <h2>Presagio</h2>
                   <p>Revela trayectorias de balas por un instante.</p>
                 </div>
-                <span class="start-pill">C</span>
+                <span class="start-pill desktop-control">C</span>
+                <span class="start-pill mobile-control">1 TOQUE</span>
               </article>
             </div>
 
@@ -229,30 +236,29 @@
           </form>
         </div>
         <div id="touch-controls" aria-hidden="true" hidden>
-          <div id="touch-power-pad" class="touch-zone">
-            <button
-              id="touch-presagio-button"
-              class="touch-power-button touch-power-button-small"
-              type="button"
-              aria-label="Presagio"
-            >
-              <img src="/assets/powers/presagio-bubble.svg" alt="" />
-            </button>
-            <button id="touch-letargo-zone" type="button" aria-label="Letargo">
-              <img src="/assets/powers/slow-bubble.svg" alt="" />
-            </button>
-            <button
-              id="touch-destello-button"
-              class="touch-power-button touch-power-button-small"
-              type="button"
-              aria-label="Destello"
-            >
-              <img src="/assets/powers/dash-bubble.svg" alt="" />
-            </button>
-          </div>
           <div id="touch-joystick-zone" class="touch-zone">
             <div id="touch-joystick-base">
               <div id="touch-joystick-thumb"></div>
+            </div>
+          </div>
+          <div id="touch-power-pad" class="touch-zone">
+            <div class="touch-power-panel">
+              <!-- ICONOS DE LOS PODERES QUEDAM FEO -->
+              <!-- <img
+                class="touch-power-icon touch-power-icon-presagio"
+                src="/assets/powers/presagio-bubble.svg"
+                alt=""
+              />
+              <img
+                class="touch-power-icon touch-power-icon-destello"
+                src="/assets/powers/dash-bubble.svg"
+                alt=""
+              />
+              <img
+                class="touch-power-icon touch-power-icon-letargo"
+                src="/assets/powers/slow-bubble.svg"
+                alt=""
+              /> -->
             </div>
           </div>
         </div>

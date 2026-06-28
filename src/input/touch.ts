@@ -10,9 +10,6 @@ export type TouchInputElements = {
   joystickBase: HTMLElement;
   joystickThumb: HTMLElement;
   powerPad: HTMLElement;
-  letargoZone: HTMLButtonElement;
-  destelloButton: HTMLButtonElement;
-  presagioButton: HTMLButtonElement;
 };
 
 export type TouchInputCallbacks = {
@@ -30,6 +27,9 @@ export type TouchInput = {
   clearPowerHold: () => void;
 };
 
+const powerHoldDelayMs = 290;
+const powerDoubleTapDelayMs = 240;
+
 export function createTouchInput(args: {
   elements: TouchInputElements;
   config: TouchInputConfig;
@@ -41,7 +41,10 @@ export function createTouchInput(args: {
   let touchSlowHeld = false;
   let joystickPointerId: number | null = null;
   let joystickOrigin: Vec2 | null = null;
-  let letargoPointerId: number | null = null;
+  let powerPointerId: number | null = null;
+  let powerHoldTimer: number | null = null;
+  let powerSingleTapTimer: number | null = null;
+  let lastPowerTapAt = 0;
 
   function focusAndStart(): void {
     callbacks.onFocus();
@@ -113,16 +116,52 @@ export function createTouchInput(args: {
   }
 
   function clearPowerHold(): void {
-    letargoPointerId = null;
+    powerPointerId = null;
     touchSlowHeld = false;
-    elements.letargoZone.classList.remove("is-holding");
+    elements.powerPad.classList.remove("is-holding");
+
+    if (powerHoldTimer !== null) {
+      window.clearTimeout(powerHoldTimer);
+      powerHoldTimer = null;
+    }
   }
 
-  function flashPowerButton(button: HTMLElement): void {
-    button.classList.add("did-activate");
+  function clearPendingSingleTap(): void {
+    if (powerSingleTapTimer === null) {
+      return;
+    }
+
+    window.clearTimeout(powerSingleTapTimer);
+    powerSingleTapTimer = null;
+  }
+
+  function flashPowerPad(action: "presagio" | "destello"): void {
+    elements.powerPad.dataset.action = action;
     window.setTimeout(() => {
-      button.classList.remove("did-activate");
-    }, 160);
+      if (elements.powerPad.dataset.action === action) {
+        delete elements.powerPad.dataset.action;
+      }
+    }, 180);
+  }
+
+  function schedulePowerTap(): void {
+    const now = performance.now();
+
+    if (now - lastPowerTapAt <= powerDoubleTapDelayMs) {
+      lastPowerTapAt = 0;
+      clearPendingSingleTap();
+      callbacks.onDash();
+      flashPowerPad("destello");
+      return;
+    }
+
+    lastPowerTapAt = now;
+    clearPendingSingleTap();
+    powerSingleTapTimer = window.setTimeout(() => {
+      powerSingleTapTimer = null;
+      callbacks.onPresagio();
+      flashPowerPad("presagio");
+    }, powerDoubleTapDelayMs);
   }
 
   elements.joystickZone.addEventListener("pointerdown", (event) => {
@@ -163,8 +202,8 @@ export function createTouchInput(args: {
     }
   });
 
-  elements.letargoZone.addEventListener("pointerdown", (event) => {
-    if (callbacks.isSettingsOpen() || letargoPointerId !== null) {
+  elements.powerPad.addEventListener("pointerdown", (event) => {
+    if (callbacks.isSettingsOpen() || powerPointerId !== null) {
       return;
     }
 
@@ -172,44 +211,35 @@ export function createTouchInput(args: {
 
     focusAndStart();
 
-    letargoPointerId = event.pointerId;
-    touchSlowHeld = true;
-    elements.letargoZone.setPointerCapture(event.pointerId);
-    elements.letargoZone.classList.add("is-holding");
+    clearPendingSingleTap();
+    powerPointerId = event.pointerId;
+    elements.powerPad.setPointerCapture(event.pointerId);
+    powerHoldTimer = window.setTimeout(() => {
+      lastPowerTapAt = 0;
+      touchSlowHeld = true;
+      elements.powerPad.classList.add("is-holding");
+    }, powerHoldDelayMs);
   });
 
-  elements.letargoZone.addEventListener("pointerup", (event) => {
-    if (event.pointerId === letargoPointerId) {
+  elements.powerPad.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== powerPointerId) {
+      return;
+    }
+
+    event.preventDefault();
+    const wasHolding = touchSlowHeld;
+
+    clearPowerHold();
+
+    if (!wasHolding) {
+      schedulePowerTap();
+    }
+  });
+
+  elements.powerPad.addEventListener("pointercancel", (event) => {
+    if (event.pointerId === powerPointerId) {
       clearPowerHold();
     }
-  });
-
-  elements.letargoZone.addEventListener("pointercancel", (event) => {
-    if (event.pointerId === letargoPointerId) {
-      clearPowerHold();
-    }
-  });
-
-  elements.destelloButton.addEventListener("pointerdown", (event) => {
-    if (callbacks.isSettingsOpen()) {
-      return;
-    }
-
-    event.preventDefault();
-    focusAndStart();
-    callbacks.onDash();
-    flashPowerButton(elements.destelloButton);
-  });
-
-  elements.presagioButton.addEventListener("pointerdown", (event) => {
-    if (callbacks.isSettingsOpen()) {
-      return;
-    }
-
-    event.preventDefault();
-    focusAndStart();
-    callbacks.onPresagio();
-    flashPowerButton(elements.presagioButton);
   });
 
   return {

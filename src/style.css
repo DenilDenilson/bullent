@@ -12,8 +12,14 @@
     --theme-muted: #aab4c8;
   }
 
+  html {
+    touch-action: manipulation;
+  }
+
   body {
     @apply min-h-screen min-w-80 bg-slate-950 text-slate-50 antialiased;
+    overscroll-behavior: none;
+    touch-action: manipulation;
     background:
       linear-gradient(rgb(94 234 212 / 0.07) 1px, transparent 1px),
       linear-gradient(90deg, rgb(94 234 212 / 0.06) 1px, transparent 1px),
@@ -105,11 +111,11 @@
   }
 
   #settings-toggle {
-    @apply absolute bottom-3 right-3 z-50 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-xl text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
+    @apply absolute bottom-3 right-3 z-50 hidden h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-xl text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
   }
 
   #sound-toggle {
-    @apply absolute bottom-3 right-14 z-50 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-base text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
+    @apply absolute bottom-3 right-3 z-50 grid h-9 w-9 place-items-center rounded-lg border border-cyan-300/25 bg-slate-950/80 text-base text-slate-100 outline-none backdrop-blur hover:border-cyan-300/70 hover:text-cyan-200 focus-visible:border-cyan-300;
   }
 
   #sound-toggle[aria-pressed="false"] {
@@ -279,6 +285,10 @@
     box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.2);
   }
 
+  .mobile-control {
+    display: none;
+  }
+
   .start-powers {
     @apply grid min-h-0 gap-2.5 overflow-hidden;
     align-content: start;
@@ -345,6 +355,10 @@
     color: #9ee9f3;
     border-color: rgb(103 232 249 / 0.38);
     background: rgb(8 47 73 / 0.74);
+  }
+
+  body:not(.mode-mobile) .mobile-control {
+    display: none;
   }
 
   #start-cta {
@@ -511,7 +525,7 @@
   }
 
   #touch-joystick-base {
-    @apply absolute left-1/2 top-1/2 grid h-24 w-24 place-items-center rounded-full border border-cyan-200/25 bg-slate-950/30 opacity-0 backdrop-blur transition;
+    @apply absolute left-1/2 top-1/2 grid h-24 w-24 place-items-center rounded-full border border-cyan-200/35 bg-slate-950/20 opacity-55 backdrop-blur transition;
     transform: translate(-50%, -50%);
     box-shadow:
       inset 0 0 0 1px rgb(255 255 255 / 0.04),
@@ -519,7 +533,7 @@
   }
 
   #touch-joystick-base.is-active {
-    @apply border-cyan-200/70 opacity-100;
+    @apply border-cyan-200/80 opacity-100;
     box-shadow:
       inset 0 0 0 1px rgb(255 255 255 / 0.08),
       0 0 32px rgb(94 234 212 / 0.28);
@@ -533,73 +547,84 @@
   }
 
   #touch-power-pad {
-    @apply relative;
+    @apply grid place-items-center;
   }
 
-  #touch-letargo-zone,
-  .touch-power-button {
-    @apply absolute grid place-items-center border bg-slate-950/58 outline-none backdrop-blur transition;
-    touch-action: none;
-    user-select: none;
-    -webkit-user-select: none;
-  }
-
-  #touch-letargo-zone img,
-  .touch-power-button img {
-    @apply pointer-events-none relative z-10;
-  }
-
-  #touch-letargo-zone {
-    @apply left-0 bottom-0 h-40 w-40 border-teal-100/28;
-    overflow: hidden;
-    border-radius: 0 9999px 0 0;
-    box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.05),
-      0 0 30px rgb(45 212 191 / 0.16);
-  }
-
-  #touch-letargo-zone::before {
-    @apply absolute inset-0;
-    content: "";
-    background: radial-gradient(
-      circle at 28% 72%,
-      rgb(45 212 191 / 0.28),
-      transparent 64%
-    );
-  }
-
-  #touch-letargo-zone img {
-    @apply absolute bottom-5 left-5 h-16 w-16;
-  }
-
-  #touch-letargo-zone.is-holding {
-    @apply border-teal-100/80;
-    background: rgb(45 212 191 / 0.2);
-    box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.14),
-      0 0 44px rgb(45 212 191 / 0.5);
-  }
-
-  .touch-power-button-small {
-    @apply h-16 w-16 rounded-full border-cyan-100/50 p-2.5;
+  .touch-power-panel {
+    @apply relative h-36 w-36 rounded-full border border-fuchsia-200/45 bg-fuchsia-950/18 backdrop-blur transition;
     box-shadow:
       inset 0 0 0 1px rgb(255 255 255 / 0.08),
-      0 0 24px rgb(125 211 252 / 0.22);
+      inset 0 0 34px rgb(168 85 247 / 0.12),
+      0 0 38px rgb(217 70 239 / 0.22);
   }
 
-  .touch-power-button-small.did-activate {
-    @apply scale-110 border-cyan-100/90;
+  .touch-power-panel::before,
+  .touch-power-panel::after {
+    @apply pointer-events-none absolute rounded-full;
+    content: "";
+  }
+
+  .touch-power-panel::before {
+    inset: 1.25rem;
+    border: 1px solid rgb(250 232 255 / 0.2);
+    box-shadow: 0 0 26px rgb(217 70 239 / 0.12);
+  }
+
+  .touch-power-panel::after {
+    inset: 50%;
+    height: 1.85rem;
+    width: 1.85rem;
+    transform: translate(-50%, -50%);
+    border: 1px solid rgb(250 232 255 / 0.42);
+    background: rgb(88 28 135 / 0.34);
+    box-shadow: 0 0 24px rgb(217 70 239 / 0.24);
+  }
+
+  .touch-power-icon {
+    @apply pointer-events-none absolute h-11 w-11 rounded-full;
+    filter: drop-shadow(0 0 14px rgb(217 70 239 / 0.28));
+  }
+
+  .touch-power-icon-presagio {
+    left: 50%;
+    top: 0.95rem;
+    transform: translateX(-50%);
+  }
+
+  .touch-power-icon-destello {
+    right: 1.05rem;
+    bottom: 1.4rem;
+  }
+
+  .touch-power-icon-letargo {
+    left: 1.05rem;
+    bottom: 1.4rem;
+  }
+
+  #touch-power-pad.is-holding .touch-power-panel {
+    border-color: rgb(94 234 212 / 0.82);
+    background: rgb(13 148 136 / 0.18);
     box-shadow:
-      inset 0 0 0 1px rgb(255 255 255 / 0.16),
-      0 0 38px rgb(125 211 252 / 0.56);
+      inset 0 0 0 1px rgb(255 255 255 / 0.13),
+      inset 0 0 34px rgb(45 212 191 / 0.16),
+      0 0 44px rgb(45 212 191 / 0.44);
   }
 
-  #touch-presagio-button {
-    @apply left-4 bottom-36;
+  #touch-power-pad[data-action="presagio"] .touch-power-panel {
+    border-color: rgb(103 232 249 / 0.82);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.14),
+      inset 0 0 34px rgb(103 232 249 / 0.14),
+      0 0 42px rgb(103 232 249 / 0.42);
   }
 
-  #touch-destello-button {
-    @apply left-36 bottom-4;
+  #touch-power-pad[data-action="destello"] .touch-power-panel {
+    transform: scale(1.04);
+    border-color: rgb(251 191 36 / 0.9);
+    box-shadow:
+      inset 0 0 0 1px rgb(255 255 255 / 0.18),
+      inset 0 0 34px rgb(251 191 36 / 0.12),
+      0 0 46px rgb(251 191 36 / 0.42);
   }
 
   body:not(.touch-controls) #touch-controls {
@@ -655,6 +680,7 @@
 
   body.mode-mobile {
     @apply min-h-0 min-w-0 overflow-hidden;
+    touch-action: none;
     background:
       linear-gradient(rgb(94 234 212 / 0.08) 1px, transparent 1px),
       linear-gradient(90deg, rgb(94 234 212 / 0.07) 1px, transparent 1px),
@@ -678,6 +704,18 @@
 
   body.mode-mobile .standalone-copy {
     @apply hidden;
+  }
+
+  body.mode-mobile .desktop-control {
+    display: none;
+  }
+
+  body.mode-mobile .mobile-control {
+    display: inline-flex;
+  }
+
+  body.mode-mobile .start-controls {
+    @apply grid-cols-[1fr_auto];
   }
 
   body.mode-mobile #mobile-hud {
@@ -719,7 +757,7 @@
   }
 
   body.mode-mobile #sound-toggle {
-    @apply top-3 right-14 bottom-auto h-8 w-8 text-sm;
+    @apply top-3 right-3 bottom-auto h-8 w-8 text-sm;
   }
 
   body.mode-mobile #powers-bar {
@@ -737,24 +775,15 @@
   }
 
   body.mode-mobile #touch-joystick-base {
-    @apply right-8 left-auto h-28 w-28;
-    transform: translateY(-50%);
+    @apply h-28 w-28;
   }
 
-  body.mode-mobile #touch-letargo-zone {
-    @apply h-32 w-32;
+  body.mode-mobile .touch-power-panel {
+    @apply h-40 w-40;
   }
 
-  body.mode-mobile #touch-letargo-zone img {
-    @apply bottom-4 left-4 h-16 w-16;
-  }
-
-  body.mode-mobile #touch-presagio-button {
-    @apply left-4 bottom-36;
-  }
-
-  body.mode-mobile #touch-destello-button {
-    @apply left-36 bottom-4;
+  body.mode-mobile .touch-power-icon {
+    @apply h-12 w-12;
   }
 
   body.mode-mobile #settings-panel {

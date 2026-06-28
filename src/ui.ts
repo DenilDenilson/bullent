@@ -123,12 +123,12 @@ export function syncSettingsVisibility(args: {
   settingsOpen: boolean;
   state: GameState;
 }): void {
-  const { settingsToggle, loadError, settingsOpen, state } = args;
+  void args.loadError;
+  void args.settingsOpen;
+  void args.state;
 
-  const canConfigure =
-    !loadError && !settingsOpen && (state === "ready" || state === "dead");
-
-  settingsToggle.hidden = !canConfigure;
+  // ponytail: level editor stays wired for dev use, but is not exposed publicly.
+  args.settingsToggle.hidden = true;
 }
 
 export function syncStartScreen(args: {

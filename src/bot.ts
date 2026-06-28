@@ -34,18 +34,18 @@ type BotThinkSession = Pick<
 >;
 
 export const defaultBotTuning: BotTuning = {
-  botDashCooldown: 1.1,
-  letargoDangerThreshold: 0.35,
-  presagioDangerThreshold: 0.45,
+  botDashCooldown: 1.371,
+  letargoDangerThreshold: 0.662,
+  presagioDangerThreshold: 0.796,
   presagioBulletThreshold: 10,
-  dashDangerThreshold: 0.75,
-  dashSafetyRatio: 0.05,
-  bulletDangerMargin: 42,
-  bulletDangerWeight: 4,
-  dangerPickupWeight: 0.12,
-  crowdedPickupWeight: 0.28,
-  mediumPickupWeight: 0.55,
-  safePickupWeight: 1,
+  dashDangerThreshold: 0.795,
+  dashSafetyRatio: 0.087,
+  bulletDangerMargin: 31.309,
+  bulletDangerWeight: 3.505,
+  dangerPickupWeight: 0.054,
+  crowdedPickupWeight: 0.285,
+  mediumPickupWeight: 0.659,
+  safePickupWeight: 0.753,
 };
 
 // Recomendadas por IA
