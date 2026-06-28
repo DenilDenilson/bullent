@@ -13,26 +13,43 @@ export type AutoplayBot = {
   reset: () => void;
 };
 
+export type BotTuning = {
+  botDashCooldown: number;
+  letargoDangerThreshold: number;
+  presagioDangerThreshold: number;
+  presagioBulletThreshold: number;
+  dashDangerThreshold: number;
+  dashSafetyRatio: number;
+  bulletDangerMargin: number;
+  bulletDangerWeight: number;
+  dangerPickupWeight: number;
+  crowdedPickupWeight: number;
+  mediumPickupWeight: number;
+  safePickupWeight: number;
+};
+
 type BotThinkSession = Pick<
   GameSession,
   "level" | "player" | "timePickup" | "bullets"
 >;
 
-// P R O P I A S
-// const bulletDangerMargin = 42;
-// const bulletDangerWeight = 4;
-
-const botDashCooldown = 1.1;
-const letargoDangerThreshold = 0.35;
-const presagioDangerThreshold = 0.45;
-const presagioBulletThreshold = 10;
-const dashDangerThreshold = 0.75;
+export const defaultBotTuning: BotTuning = {
+  botDashCooldown: 1.1,
+  letargoDangerThreshold: 0.35,
+  presagioDangerThreshold: 0.45,
+  presagioBulletThreshold: 10,
+  dashDangerThreshold: 0.75,
+  dashSafetyRatio: 0.05,
+  bulletDangerMargin: 42,
+  bulletDangerWeight: 4,
+  dangerPickupWeight: 0.12,
+  crowdedPickupWeight: 0.28,
+  mediumPickupWeight: 0.55,
+  safePickupWeight: 1,
+};
 
 // Recomendadas por IA
 const dangerLookaheadTimes = [0, 0.12, 0.24, 0.36, 0.48, 0.6];
-
-const bulletDangerMargin = 42;
-const bulletDangerWeight = 4;
 
 const wallDangerMargin = 0;
 const wallDangerWeight = 0;
@@ -49,38 +66,40 @@ const candidateDirections: Vec2[] = [
   { x: -1, y: -1 },
 ].map(normalize);
 
-export function createAutoplayBot(): AutoplayBot {
+export function createAutoplayBot(
+  tuning: BotTuning = defaultBotTuning,
+): AutoplayBot {
   let dashCooldownRemaining = 0;
 
   return {
     think(session, rawDt) {
       dashCooldownRemaining = Math.max(0, dashCooldownRemaining - rawDt);
 
-      const danger = dangerNearPlayer(session);
-      const direction = chooseBotDirection(session);
+      const danger = dangerNearPlayer(session, tuning);
+      const direction = chooseBotDirection(session, tuning);
 
-      const directionDangerScore = directionDanger(session, direction);
+      const directionDangerScore = directionDanger(session, direction, tuning);
 
       const useDash =
-        danger >= dashDangerThreshold &&
+        danger >= tuning.dashDangerThreshold &&
         dashCooldownRemaining === 0 &&
-        directionDangerScore < danger * 0.05 &&
-        botDashSurvives(session, direction);
+        directionDangerScore < danger * tuning.dashSafetyRatio &&
+        botDashSurvives(session, direction, tuning);
 
       if (useDash) {
-        dashCooldownRemaining = botDashCooldown;
+        dashCooldownRemaining = tuning.botDashCooldown;
       }
 
       return {
         direction,
         slowHeld:
-          danger >= letargoDangerThreshold &&
+          danger >= tuning.letargoDangerThreshold &&
           session.letargo.cooldownRemaining === 0 &&
           session.letargo.energy > 0.1,
         useDash,
         usePresagio:
-          session.bullets.length >= presagioBulletThreshold &&
-          danger >= presagioDangerThreshold &&
+          session.bullets.length >= tuning.presagioBulletThreshold &&
+          danger >= tuning.presagioDangerThreshold &&
           session.presagio.cooldownRemaining === 0,
       };
     },
@@ -93,12 +112,13 @@ export function createAutoplayBot(): AutoplayBot {
 
 function dangerNearPlayer(
   session: Pick<GameSession, "level" | "player" | "bullets">,
+  tuning: BotTuning,
 ): number {
   let danger = 0;
 
   for (const bullet of session.bullets) {
     const unsafeDistance =
-      session.player.radius + bullet.radius + bulletDangerMargin;
+      session.player.radius + bullet.radius + tuning.bulletDangerMargin;
 
     for (const time of dangerLookaheadTimes) {
       const futureBullet = moveBullet(bullet, time, session.level);
@@ -114,7 +134,11 @@ function dangerNearPlayer(
   return danger;
 }
 
-export function botDashSurvives(session: GameSession, direction: Vec2): boolean {
+export function botDashSurvives(
+  session: GameSession,
+  direction: Vec2,
+  tuning: BotTuning = defaultBotTuning,
+): boolean {
   const dashDirection = isMoving(direction) ? direction : session.lastDirection;
   const dashedPlayer = movePlayer(
     session.player,
@@ -129,7 +153,11 @@ export function botDashSurvives(session: GameSession, direction: Vec2): boolean 
 
   // ponytail: sampled landing check only; upgrade to swept dash collision if needed.
   return (
-    directionDanger({ ...session, player: dashedPlayer }, { x: 0, y: 0 }) === 0
+    directionDanger(
+      { ...session, player: dashedPlayer },
+      { x: 0, y: 0 },
+      tuning,
+    ) === 0
   );
 }
 
@@ -142,12 +170,15 @@ export function thinkBot(session: GameSession): BotInput {
   };
 }
 
-export function chooseBotDirection(session: BotThinkSession): Vec2 {
+export function chooseBotDirection(
+  session: BotThinkSession,
+  tuning: BotTuning = defaultBotTuning,
+): Vec2 {
   let bestDirection: Vec2 = { x: 0, y: 0 };
   let bestScore = Number.NEGATIVE_INFINITY;
 
   for (const direction of candidateDirections) {
-    const score = scoreDirection(session, direction);
+    const score = scoreDirection(session, direction, tuning);
 
     if (score > bestScore) {
       bestScore = score;
@@ -158,13 +189,17 @@ export function chooseBotDirection(session: BotThinkSession): Vec2 {
   return bestDirection;
 }
 
-function scoreDirection(session: BotThinkSession, direction: Vec2): number {
-  const danger = directionDanger(session, direction);
+function scoreDirection(
+  session: BotThinkSession,
+  direction: Vec2,
+  tuning: BotTuning,
+): number {
+  const danger = directionDanger(session, direction, tuning);
 
   return (
     scorePickupDirection(session, direction) *
-      pickupWeightFor(session, danger) -
-    danger * bulletDangerWeight +
+      pickupWeightFor(session, danger, tuning) -
+    danger * tuning.bulletDangerWeight +
     scoreWallSafety(session, direction)
   );
 }
@@ -181,15 +216,23 @@ function scorePickupDirection(
   return dot(direction, desiredDirection);
 }
 
-function pickupWeightFor(session: BotThinkSession, danger: number): number {
-  if (danger > 0.55) return 0.12;
-  if (session.bullets.length >= 22) return 0.28;
-  if (session.bullets.length >= 12) return 0.55;
+function pickupWeightFor(
+  session: BotThinkSession,
+  danger: number,
+  tuning: BotTuning,
+): number {
+  if (danger > 0.55) return tuning.dangerPickupWeight;
+  if (session.bullets.length >= 22) return tuning.crowdedPickupWeight;
+  if (session.bullets.length >= 12) return tuning.mediumPickupWeight;
 
-  return 1;
+  return tuning.safePickupWeight;
 }
 
-function directionDanger(session: BotThinkSession, direction: Vec2): number {
+function directionDanger(
+  session: BotThinkSession,
+  direction: Vec2,
+  tuning: BotTuning,
+): number {
   let danger = 0;
 
   for (const time of dangerLookaheadTimes) {
@@ -203,7 +246,7 @@ function directionDanger(session: BotThinkSession, direction: Vec2): number {
     for (const bullet of session.bullets) {
       const futureBullet = moveBullet(bullet, time, session.level);
       const unsafeDistance =
-        session.player.radius + bullet.radius + bulletDangerMargin;
+        session.player.radius + bullet.radius + tuning.bulletDangerMargin;
       const distance = distanceBetween(futurePlayer.pos, futureBullet.pos);
 
       if (distance < unsafeDistance) {

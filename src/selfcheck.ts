@@ -1,6 +1,11 @@
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
-import { botDashSurvives, chooseBotDirection, thinkBot } from "./bot.ts";
+import {
+  botDashSurvives,
+  chooseBotDirection,
+  defaultBotTuning,
+  thinkBot,
+} from "./bot.ts";
 import {
   DEFAULT_LEVEL,
   circlesTouch,
@@ -270,6 +275,12 @@ botSession.bullets = [
 
 const dangerAwareBotDirection = chooseBotDirection(botSession);
 assert.notEqual(dangerAwareBotDirection.x, 1);
+
+const customTuningBotDirection = chooseBotDirection(botSession, {
+  ...defaultBotTuning,
+  bulletDangerWeight: defaultBotTuning.bulletDangerWeight + 1,
+});
+assert.notEqual(customTuningBotDirection.x, 1);
 
 const dashSafetySession = createGameSession({
   level: DEFAULT_LEVEL,

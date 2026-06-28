@@ -8,3 +8,4 @@ TODO:
 - DOCUMENTAR! PROCESOS DE CÓMO AÑADIR PODERES QUE SINO NOS MAREAMOS ACÁ
 - Scripts para que el bot juegue muchas partidas con la idea de obtener los pesos ideales
 - Quitar el zoom del replay - Mnnnn evaluar más tiempo aún
+- VISUAL: MOBILE HOME Y MOBILE QUE APAREZACA EL TOUCH COMO GUIA QUE EN ESA ZONA SE MUEVE, SOLO COMO GUIA
